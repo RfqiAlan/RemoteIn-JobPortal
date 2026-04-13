@@ -1,0 +1,55 @@
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: remotein-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: remotein
+      MYSQL_USER: remotein_user
+      MYSQL_PASSWORD: remotein_pass
+    ports:
+      - "3306:3306"       # Expose ke host agar bisa diakses via TablePlus/DBeaver
+    volumes:
+      - mysql_data:/var/lib/mysql   # Data MySQL persisten
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: remotein-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_HOST=mysql               # ← Nama service MySQL di atas, BUKAN localhost
+      - DB_PORT=3306
+      - DB_USER=remotein_user
+      - DB_PASSWORD=remotein_pass
+      - DB_NAME=remotein
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      mysql:
+        condition: service_healthy  # Tunggu MySQL benar-benar siap sebelum backend start
+
+  frontend:
+    build: ./frontend
+    container_name: remotein-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_TARGET=http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

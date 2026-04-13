@@ -1,0 +1,31 @@
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+
+# Ambil konfigurasi dari environment variable
+# Fallback ke nilai lokal jika tidak ada (untuk dev tanpa Docker)
+DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_PORT     = os.getenv("DB_PORT", "3306")
+DB_USER     = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME     = os.getenv("DB_NAME", "remotein")
+
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,       # Cek koneksi sebelum dipakai (penting untuk MySQL)
+    pool_recycle=3600,        # Recycle koneksi tiap 1 jam (hindari MySQL timeout)
+)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -5,7 +5,7 @@ from database import engine, Base
 from models import user, job
 
 # Import routers
-from routers import auth, jobs
+from routers import auth, jobs, external
 
 # Buat semua tabel di database SQLite
 Base.metadata.create_all(bind=engine)
@@ -19,6 +19,7 @@ app = FastAPI(
 # Daftarkan semua router
 app.include_router(auth.router)
 app.include_router(jobs.router)
+app.include_router(external.router)
 
 @app.get("/", tags=["Root"])
 def root():
