@@ -1,24 +1,110 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
+import { getMe } from './lib/api';
+import type { UserResponse } from './types/api';
+import EmployerDashboard from './pages/EmployerDashboard';
 import ExternalJobs from './pages/ExternalJobs';
+import Home from './pages/Home';
+import JobDetail from './pages/JobDetail';
+import Jobs from './pages/Jobs';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+const TOKEN_STORAGE_KEY = 'remotein_access_token';
+
+type GuardProps = {
+  user: UserResponse | null;
+  children: ReactNode;
+};
+
+function RequireEmployer({ user, children }: GuardProps) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'employer') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!token) {
+        setSessionLoading(false);
+        return;
+      }
+
+      try {
+        const profile = await getMe(token);
+        setUser(profile);
+      } catch {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setToken(null);
+        setUser(null);
+      } finally {
+        setSessionLoading(false);
+      }
+    };
+
+    void loadProfile();
+  }, [token]);
+
+  const handleLoggedIn = async (nextToken: string) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
+    setToken(nextToken);
+    try {
+      const profile = await getMe(nextToken);
+      setUser(profile);
+    } catch (error) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      setToken(null);
+      setUser(null);
+      throw error;
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setToken(null);
+    setUser(null);
+  };
+
   return (
     <BrowserRouter>
-      {/* Global Navbar applied to all pages */}
-      <div className="relative w-full overflow-x-hidden">
-        <Navbar />
-        
-        {/* Router switches views */}
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/remote-jobs" element={<ExternalJobs />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
+      <div className="min-h-screen bg-slate-50">
+        <Navbar user={user} onLogout={handleLogout} />
+        <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-24 sm:px-6">
+          {sessionLoading ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-600">Memuat sesi...</div>
+          ) : (
+            <Routes>
+              <Route path="/" element={<Home user={user} />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:jobId" element={<JobDetail user={user} />} />
+              <Route path="/remote-jobs" element={<ExternalJobs user={user} token={token} />} />
+              <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login onLoggedIn={handleLoggedIn} />} />
+              <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireEmployer user={user}>
+                    <EmployerDashboard user={user} token={token} />
+                  </RequireEmployer>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          )}
+        </main>
       </div>
     </BrowserRouter>
   );

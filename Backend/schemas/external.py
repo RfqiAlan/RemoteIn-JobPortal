@@ -1,5 +1,7 @@
+from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel
-from typing import Optional, List
 
 class ExternalJob(BaseModel):
     """
@@ -25,3 +27,21 @@ class AggregatedJobList(BaseModel):
     total: int
     sources: List[str]
     jobs: List[ExternalJob]
+
+
+class SyncRequestResponse(BaseModel):
+    request_id: int
+    status: str
+    message: str
+    cooldown_seconds: int
+    next_available_at: datetime
+
+
+class SyncStatusResponse(BaseModel):
+    request_id: int
+    status: str
+    message: Optional[str] = None
+    total_jobs_processed: int
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None

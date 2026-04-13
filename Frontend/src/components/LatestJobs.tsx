@@ -1,4 +1,6 @@
-export default function LatestJobs({ jobs }: { jobs: any[] }) {
+import type { JobResponse } from '../types/api';
+
+export default function LatestJobs({ jobs }: { jobs: JobResponse[] }) {
   return (
     <>
 <div className="w-[1440px] h-[877px] relative overflow-hidden">
@@ -35,9 +37,9 @@ export default function LatestJobs({ jobs }: { jobs: any[] }) {
                 <div className="justify-start text-slate-600 text-base font-normal font-['Epilogue'] leading-6">{job.location}</div>
               </div>
               <div className="inline-flex justify-start items-start gap-2">
-                <div data-color="Green" data-type="Filled" className="px-2.5 py-1.5 bg-emerald-300/10 rounded-[80px] flex justify-center items-center gap-2">
-                  <div className="justify-start text-emerald-300 text-sm font-semibold font-['Epilogue'] leading-6">{job.job_type || 'Full-Time'}</div>
-                </div>
+                  <div data-color="Green" data-type="Filled" className="px-2.5 py-1.5 bg-emerald-300/10 rounded-[80px] flex justify-center items-center gap-2">
+                  <div className="justify-start text-emerald-300 text-sm font-semibold font-['Epilogue'] leading-6">Active</div>
+                  </div>
                 <div className="w-px self-stretch bg-zinc-200" />
                 <div data-color="Yellow" data-type="Outline" className="px-2.5 py-1.5 rounded-[80px] outline outline-1 outline-offset-[-1px] outline-amber-400 flex justify-center items-center gap-2">
                   <div className="justify-start text-amber-400 text-sm font-semibold font-['Epilogue'] leading-6">{job.salary_min && job.salary_max ? "$" + job.salary_min + " - $" + job.salary_max : 'N/A'}</div>

@@ -37,3 +37,12 @@ def require_employer(current_user: User = Depends(get_current_user)) -> User:
             detail="Hanya employer yang dapat mengakses endpoint ini"
         )
     return current_user
+
+
+def require_jobseeker(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "jobseeker":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Hanya jobseeker yang dapat mengakses endpoint ini"
+        )
+    return current_user

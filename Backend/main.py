@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from database import engine, Base
 
 # Import models sebelum create_all agar relasi terbaca dengan benar
-from models import user, job
+from models import user, job, external
 
 # Import routers
 from routers import auth, jobs, external

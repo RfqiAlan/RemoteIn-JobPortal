@@ -37,6 +37,16 @@ http://localhost:8000/docs
 | PUT | /jobs/{id} | JWT employer | Update job |
 | DELETE | /jobs/{id} | JWT employer | Hapus job |
 
+### External Jobs (database-backed)
+| Method | URL | Auth | Keterangan |
+|--------|-----|------|------------|
+| GET | /external/aggregate | Tidak | Ambil external jobs dari database |
+| GET | /external/remotive | Tidak | List source Remotive dari database |
+| GET | /external/arbeitnow | Tidak | List source Arbeitnow dari database |
+| GET | /external/jobicy | Tidak | List source Jobicy dari database |
+| POST | /external/refresh-request | JWT jobseeker | Minta sinkronisasi data external (cooldown 10 menit) |
+| GET | /external/refresh-status/{id} | JWT jobseeker | Cek status sinkronisasi |
+
 ## Contoh Alur Testing (Postman)
 1. POST /auth/register — daftar akun dengan role "employer"
 2. POST /auth/login — login, copy nilai access_token

@@ -20,3 +20,4 @@ class User(Base):
 
     # Relasi One-to-Many: satu User bisa punya banyak Job
     jobs = relationship("Job", back_populates="owner")
+    external_sync_requests = relationship("ExternalSyncRequest", back_populates="requester")
