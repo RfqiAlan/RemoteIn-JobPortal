@@ -149,8 +149,21 @@ export default function EmployerDashboard({ user, token }: EmployerDashboardProp
   return (
     <div className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h1 className="text-3xl font-bold text-slate-900">Employer Dashboard</h1>
-        <p className="mt-2 text-slate-600">Kelola lowongan menggunakan endpoint <code>/jobs</code> (POST, PUT, DELETE).</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Employer Dashboard</h1>
+            <p className="mt-2 text-slate-600">Kelola lowongan menggunakan endpoint <code>/jobs</code> (POST, PUT, DELETE).</p>
+          </div>
+          {user && (
+            <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 sm:text-right flex flex-col sm:items-end w-full sm:w-auto">
+              <p className="text-sm font-bold text-slate-800">{user.name}</p>
+              <p className="text-sm font-medium text-primary mt-1">{user.email}</p>
+              <p className="text-xs text-slate-500 mt-2">
+                Member since {new Date(user.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+          )}
+        </div>
       </header>
 
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>}

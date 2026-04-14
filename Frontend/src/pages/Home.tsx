@@ -218,11 +218,9 @@ export default function Home(_props: HomeProps) {
           ) : (
             <div className="grid gap-4 bg-white/50 p-2 rounded-xl">
               {externalJobs.map((job) => (
-                <a
+                <Link
                   key={job.id}
-                  href={job.url}
-                  target="_blank"
-                  rel="noreferrer"
+                  to={`/remote-jobs/${job.id}`}
                   className="bg-white border border-slate-200 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:border-primary-200 hover:shadow-md group"
                 >
                   <div className="flex items-center gap-4">
@@ -249,7 +247,7 @@ export default function Home(_props: HomeProps) {
                       Apply
                     </button>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           )}

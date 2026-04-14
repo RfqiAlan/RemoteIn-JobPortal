@@ -295,3 +295,25 @@ def get_jobicy_jobs(limit: int = Query(default=100, ge=1, le=1000), db: Session 
     ).order_by(ExternalJobRecord.updated_at.desc()).limit(limit).all()
     jobs = [map_external_job(record) for record in records]
     return ExternalJobList(source="jobicy", total=len(jobs), jobs=jobs)
+
+
+@router.get(
+    "/jobs/{job_id}",
+    response_model=ExternalJob,
+    summary="Ambil detail external job berdasarkan kombinasi source dan id asli",
+)
+def get_external_job(job_id: str, db: Session = Depends(get_db)):
+    parts = job_id.split("_", 1)
+    if len(parts) != 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Format ID external job tidak valid")
+    source, source_job_id = parts
+
+    record = db.query(ExternalJobRecord).filter(
+        ExternalJobRecord.source == source,
+        ExternalJobRecord.source_job_id == source_job_id
+    ).first()
+
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="External job tidak ditemukan")
+
+    return map_external_job(record)

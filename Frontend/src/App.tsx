@@ -9,6 +9,7 @@ import EmployerDashboard from './pages/EmployerDashboard';
 import ExternalJobs from './pages/ExternalJobs';
 import Home from './pages/Home';
 import JobDetail from './pages/JobDetail';
+import ExternalJobDetail from './pages/ExternalJobDetail';
 import Jobs from './pages/Jobs';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -92,6 +93,7 @@ export default function App() {
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetail user={user} />} />
               <Route path="/remote-jobs" element={<ExternalJobs user={user} token={token} />} />
+              <Route path="/remote-jobs/:jobId" element={<ExternalJobDetail user={user} />} />
               <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login onLoggedIn={handleLoggedIn} />} />
               <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
               <Route

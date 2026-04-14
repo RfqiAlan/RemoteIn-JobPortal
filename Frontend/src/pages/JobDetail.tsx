@@ -84,6 +84,27 @@ export default function JobDetail({ user }: JobDetailProps) {
         <p className="mt-2 whitespace-pre-wrap text-slate-700">{job.description}</p>
       </section>
 
+      <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Contact / Employer Info</h2>
+        <div className="mt-4 flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-xl font-bold text-primary">
+            {job.owner.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">{job.owner.name}</p>
+            <p className="text-sm text-slate-600 mt-0.5">
+              Email to apply:{' '}
+              <a href={`mailto:${job.owner.email}`} className="text-primary hover:text-primary-hover font-medium underline">
+                {job.owner.email}
+              </a>
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Member since {new Date(job.owner.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        </div>
+      </section>
+
       <footer className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
         <Link to="/jobs" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
           Kembali

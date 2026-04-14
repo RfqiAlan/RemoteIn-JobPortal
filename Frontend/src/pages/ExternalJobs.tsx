@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, ExternalLink, Search } from 'lucide-react';
 import { createExternalRefreshRequest, getExternalJobs, getExternalRefreshStatus } from '../lib/api';
 import type { AggregatedJobList, SyncStatusResponse, UserResponse } from '../types/api';
@@ -225,7 +226,7 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
             {data?.jobs.length ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {data.jobs.map((job) => (
-                  <article key={job.id} className="rounded-xl border border-slate-200 p-4">
+                  <article key={job.id} className="rounded-xl border border-slate-200 p-4 hover:border-primary-200 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between gap-2">
                       <span className={`rounded px-2 py-1 text-xs font-semibold ${SOURCE_BADGE[job.source] ?? 'bg-slate-100 text-slate-700'}`}>
                         {job.source}
@@ -254,14 +255,21 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
                       </div>
                     )}
 
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-                    >
-                      Apply now <ExternalLink className="h-4 w-4" />
-                    </a>
+                    <div className="mt-4 flex items-center gap-3">
+                      <Link
+                        to={`/remote-jobs/${job.id}`}
+                        className="text-sm font-semibold text-primary hover:text-primary-hover">
+                        View Details
+                      </Link>
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                      >
+                        Apply now <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
                   </article>
                 ))}
               </div>

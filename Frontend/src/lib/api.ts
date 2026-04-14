@@ -1,5 +1,6 @@
 import type {
   AggregatedJobList,
+  ExternalJob,
   JobCreatePayload,
   JobResponse,
   JobUpdatePayload,
@@ -155,6 +156,10 @@ export async function getExternalJobs(params: GetExternalJobsParams = {}): Promi
   const query = search.toString();
   const endpoint = query ? `/external/aggregate?${query}` : '/external/aggregate';
   return request<AggregatedJobList>(endpoint);
+}
+
+export async function getExternalJob(jobId: string): Promise<ExternalJob> {
+  return request<ExternalJob>(`/external/jobs/${jobId}`);
 }
 
 export async function createExternalRefreshRequest(token: string): Promise<SyncRequestResponse> {
