@@ -2,7 +2,8 @@
 services:
 
   mysql:
-    image: mysql:8.0
+    image: mysql/mysql-server:8.0 
+    platform: linux/arm64
     container_name: remotein-mysql
     restart: always
     environment:
@@ -11,7 +12,7 @@ services:
       MYSQL_USER: remotein_user
       MYSQL_PASSWORD: remotein_pass
     ports:
-      - "3306:3306"       # Expose ke host agar bisa diakses via TablePlus/DBeaver
+      - "3307:3306"       # Expose ke host agar bisa diakses via TablePlus/DBeaver
     volumes:
       - mysql_data:/var/lib/mysql   # Data MySQL persisten
     healthcheck:

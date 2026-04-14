@@ -2,6 +2,7 @@ from database import SessionLocal
 from models.user import User, RoleEnum
 from models.job import Job
 from routers.auth import hash_password
+from models.external import ExternalSyncRequest
 
 def seed_data():
     db = SessionLocal()

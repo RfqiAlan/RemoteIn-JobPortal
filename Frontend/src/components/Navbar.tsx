@@ -7,24 +7,24 @@ type NavbarProps = {
 };
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
-    isActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+  `px-2 py-1 text-base font-medium transition-colors ${
+    isActive ? 'text-primary border-b-2 border-primary' : 'text-slate-600 hover:text-primary'
   }`;
 
 export default function Navbar({ user, onLogout }: NavbarProps) {
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-lg font-bold text-slate-800">
-            RemoteIn
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white">
+      <div className="mx-auto flex h-[72px] w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="text-2xl font-bold text-slate-900 tracking-tight">
+            Remote<span className="text-primary">In</span>
           </Link>
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav className="hidden items-center gap-6 sm:flex mt-1">
             <NavLink to="/" end className={navLinkClass}>
               Home
             </NavLink>
             <NavLink to="/jobs" className={navLinkClass}>
-              Jobs
+              Find Jobs
             </NavLink>
             <NavLink to="/remote-jobs" className={navLinkClass}>
               External Jobs
@@ -37,27 +37,27 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {user ? (
             <>
               <div className="hidden text-sm text-slate-600 sm:block">
-                Hi, <span className="font-semibold text-slate-800">{user.name}</span>
+                Welcome, <span className="font-semibold text-slate-800">{user.name}</span>
               </div>
               <button
                 type="button"
                 onClick={onLogout}
-                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                className="rounded text-primary border border-primary px-4 py-2 font-semibold transition-colors hover:bg-primary-50"
               >
                 Logout
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              <Link to="/login" className="px-4 py-2 font-semibold text-primary transition-colors hover:text-primary-hover">
                 Login
               </Link>
-              <Link to="/register" className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-                Register
+              <Link to="/register" className="rounded border border-primary bg-primary px-5 py-2 font-semibold text-white transition-colors hover:bg-primary-hover hover:border-primary-hover shadow-sm">
+                Sign Up
               </Link>
             </>
           )}

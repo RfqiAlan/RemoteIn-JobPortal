@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { getMe } from './lib/api';
 import type { UserResponse } from './types/api';
 import EmployerDashboard from './pages/EmployerDashboard';
@@ -105,6 +106,7 @@ export default function App() {
             </Routes>
           )}
         </main>
+        <Footer />
       </div>
     </BrowserRouter>
   );
