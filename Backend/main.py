@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from database import engine, Base
 
@@ -7,8 +8,18 @@ from models import user, job, external
 # Import routers
 from routers import auth, jobs, external
 
-# Buat semua tabel di database SQLite
-Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
+
+# Buat semua tabel di database (MySQL)
+# Wrapped in try-except so the app can start even if the database is not yet
+# available — tables will be created on the next successful connection.
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.warning(
+        "Could not create database tables on startup (database may not be "
+        "available yet): %s", e
+    )
 
 app = FastAPI(
     title="RemoteIn API",
