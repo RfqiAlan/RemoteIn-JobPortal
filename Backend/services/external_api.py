@@ -3,6 +3,10 @@ from typing import List, Optional
 from schemas.external import ExternalJob
 
 TIMEOUT = 10  # detik
+DEFAULT_HEADERS = {
+    "User-Agent": "RemoteIn/1.0 (+https://remotein.local)",
+    "Accept": "application/json",
+}
 
 
 async def fetch_remotive(category: Optional[str] = None, limit: int = 20) -> List[ExternalJob]:
@@ -16,7 +20,7 @@ async def fetch_remotive(category: Optional[str] = None, limit: int = 20) -> Lis
         params["category"] = category
 
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT, headers=DEFAULT_HEADERS) as client:
             response = await client.get(
                 "https://remotive.com/api/remote-jobs",
                 params=params
@@ -51,27 +55,33 @@ async def fetch_arbeitnow(limit: int = 20) -> List[ExternalJob]:
     Tidak ada filter kategori, ambil semua lalu slice.
     """
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            response = await client.get(
-                "https://www.arbeitnow.com/api/job-board-api"
-            )
-            response.raise_for_status()
-            data = response.json()
-
         jobs = []
-        for item in data.get("data", [])[:limit]:
-            jobs.append(ExternalJob(
-                id=f"arbeitnow_{item.get('slug', '')}",
-                title=item.get("title", ""),
-                company=item.get("company_name", ""),
-                location=item.get("location") or "Remote",
-                tags=item.get("tags", []),
-                salary=None,  # Arbeitnow tidak expose salary di API publik
-                url=item.get("url", ""),
-                source="arbeitnow",
-                published_at=str(item.get("created_at", ""))
-            ))
-        return jobs
+        next_url = "https://www.arbeitnow.com/api/job-board-api"
+
+        async with httpx.AsyncClient(timeout=TIMEOUT, headers=DEFAULT_HEADERS) as client:
+            while next_url and len(jobs) < limit:
+                response = await client.get(next_url)
+                response.raise_for_status()
+                data = response.json()
+
+                for item in data.get("data", []):
+                    jobs.append(ExternalJob(
+                        id=f"arbeitnow_{item.get('slug', '')}",
+                        title=item.get("title", ""),
+                        company=item.get("company_name", ""),
+                        location=item.get("location") or "Remote",
+                        tags=item.get("tags", []),
+                        salary=None,  # Arbeitnow tidak expose salary di API publik
+                        url=item.get("url", ""),
+                        source="arbeitnow",
+                        published_at=str(item.get("created_at", ""))
+                    ))
+                    if len(jobs) >= limit:
+                        break
+
+                next_url = (data.get("links") or {}).get("next")
+
+        return jobs[:limit]
 
     except (httpx.RequestError, httpx.HTTPStatusError):
         return []
@@ -97,7 +107,7 @@ async def fetch_jobicy(
         params["tag"] = tag
 
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT, headers=DEFAULT_HEADERS) as client:
             response = await client.get(
                 "https://jobicy.com/api/v2/remote-jobs",
                 params=params

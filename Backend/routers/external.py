@@ -24,6 +24,9 @@ router = APIRouter(prefix="/external", tags=["External Jobs"])
 
 COOLDOWN_SECONDS = 600
 SYNC_SOURCES = ("remotive", "arbeitnow", "jobicy")
+SYNC_LIMIT_REMOTIVE = 500
+SYNC_LIMIT_ARBEITNOW = 1000
+SYNC_LIMIT_JOBICY = 50  # Maks dari API Jobicy
 
 
 def map_external_job(record: ExternalJobRecord) -> ExternalJob:
@@ -61,29 +64,35 @@ async def run_external_sync(sync_request_id: int) -> None:
         db.commit()
 
         remotive_jobs, arbeitnow_jobs, jobicy_jobs = await asyncio.gather(
-            fetch_remotive(limit=20),
-            fetch_arbeitnow(limit=20),
-            fetch_jobicy(count=20),
+            fetch_remotive(limit=SYNC_LIMIT_REMOTIVE),
+            fetch_arbeitnow(limit=SYNC_LIMIT_ARBEITNOW),
+            fetch_jobicy(count=SYNC_LIMIT_JOBICY),
         )
         fetched_jobs = remotive_jobs + arbeitnow_jobs + jobicy_jobs
         seen_pairs = set()
         synced_at = datetime.utcnow()
+        record_cache = {}
 
         for external_job in fetched_jobs:
             source_job_id = extract_source_job_id(external_job.id, external_job.source)
-            seen_pairs.add((external_job.source, source_job_id))
+            key = (external_job.source, source_job_id)
+            seen_pairs.add(key)
 
-            existing = db.query(ExternalJobRecord).filter(
-                ExternalJobRecord.source == external_job.source,
-                ExternalJobRecord.source_job_id == source_job_id,
-            ).first()
-
+            existing = record_cache.get(key)
             if existing is None:
-                existing = ExternalJobRecord(
-                    source=external_job.source,
-                    source_job_id=source_job_id,
-                )
-                db.add(existing)
+                existing = db.query(ExternalJobRecord).filter(
+                    ExternalJobRecord.source == external_job.source,
+                    ExternalJobRecord.source_job_id == source_job_id,
+                ).first()
+
+                if existing is None:
+                    existing = ExternalJobRecord(
+                        source=external_job.source,
+                        source_job_id=source_job_id,
+                    )
+                    db.add(existing)
+
+                record_cache[key] = existing
 
             existing.title = external_job.title
             existing.company = external_job.company
@@ -109,8 +118,8 @@ async def run_external_sync(sync_request_id: int) -> None:
 
         sync_request.status = SyncRequestStatus.success
         sync_request.finished_at = datetime.utcnow()
-        sync_request.total_jobs_processed = len(fetched_jobs)
-        sync_request.message = f"Sinkronisasi selesai: {len(fetched_jobs)} job diproses."
+        sync_request.total_jobs_processed = len(seen_pairs)
+        sync_request.message = f"Sinkronisasi selesai: {len(seen_pairs)} job unik diproses."
         db.commit()
 
     except Exception as error:
@@ -212,7 +221,7 @@ def get_refresh_status(
     summary="Ambil external jobs dari database hasil sinkronisasi",
 )
 def get_aggregated_jobs(
-    limit: int = Query(default=10, ge=1, le=50, description="Jumlah job per sumber"),
+    limit: int = Query(default=100, ge=1, le=1000, description="Jumlah job per sumber"),
     keyword: Optional[str] = Query(default=None, description="Filter keyword di judul atau company"),
     db: Session = Depends(get_db),
 ):
@@ -251,7 +260,7 @@ def get_aggregated_jobs(
     response_model=ExternalJobList,
     summary="Ambil loker remotive dari database hasil sinkronisasi",
 )
-def get_remotive_jobs(limit: int = Query(default=20, ge=1, le=100), db: Session = Depends(get_db)):
+def get_remotive_jobs(limit: int = Query(default=100, ge=1, le=1000), db: Session = Depends(get_db)):
     records = db.query(ExternalJobRecord).filter(
         ExternalJobRecord.source == "remotive",
         ExternalJobRecord.is_active == True,  # noqa: E712
@@ -265,7 +274,7 @@ def get_remotive_jobs(limit: int = Query(default=20, ge=1, le=100), db: Session 
     response_model=ExternalJobList,
     summary="Ambil loker arbeitnow dari database hasil sinkronisasi",
 )
-def get_arbeitnow_jobs(limit: int = Query(default=20, ge=1, le=100), db: Session = Depends(get_db)):
+def get_arbeitnow_jobs(limit: int = Query(default=100, ge=1, le=1000), db: Session = Depends(get_db)):
     records = db.query(ExternalJobRecord).filter(
         ExternalJobRecord.source == "arbeitnow",
         ExternalJobRecord.is_active == True,  # noqa: E712
@@ -279,7 +288,7 @@ def get_arbeitnow_jobs(limit: int = Query(default=20, ge=1, le=100), db: Session
     response_model=ExternalJobList,
     summary="Ambil loker jobicy dari database hasil sinkronisasi",
 )
-def get_jobicy_jobs(limit: int = Query(default=20, ge=1, le=100), db: Session = Depends(get_db)):
+def get_jobicy_jobs(limit: int = Query(default=100, ge=1, le=1000), db: Session = Depends(get_db)):
     records = db.query(ExternalJobRecord).filter(
         ExternalJobRecord.source == "jobicy",
         ExternalJobRecord.is_active == True,  # noqa: E712

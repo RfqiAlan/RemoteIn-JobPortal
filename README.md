@@ -19,6 +19,13 @@ uvicorn main:app --reload
 ### 3. Buka Swagger UI
 http://localhost:8000/docs
 
+### 4. (Opsional) Set JWT secret via env
+Jika tidak di-set, backend akan memakai dev key default.
+
+```bash
+export SECRET_KEY="ganti-dengan-secret-yang-kuat"
+```
+
 ## Endpoint
 
 ### Auth
@@ -46,6 +53,8 @@ http://localhost:8000/docs
 | GET | /external/jobicy | Tidak | List source Jobicy dari database |
 | POST | /external/refresh-request | JWT jobseeker | Minta sinkronisasi data external (cooldown 10 menit) |
 | GET | /external/refresh-status/{id} | JWT jobseeker | Cek status sinkronisasi |
+
+Catatan sinkronisasi: refresh akan mengambil data sebanyak mungkin dari sumber eksternal (target: Remotive 500, Arbeitnow 1000 lewat pagination, Jobicy 50 sesuai batas API).
 
 ## Contoh Alur Testing (Postman)
 1. POST /auth/register — daftar akun dengan role "employer"

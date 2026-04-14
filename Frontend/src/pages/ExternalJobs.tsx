@@ -32,7 +32,7 @@ const POLLING_INTERVAL_MS = 2000;
 
 export default function ExternalJobs({ user, token }: ExternalJobsProps) {
   const [keyword, setKeyword] = useState('');
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(100);
   const [data, setData] = useState<AggregatedJobList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
   }, []);
 
   useEffect(() => {
-    void loadJobs('', 10);
+    void loadJobs('', 100);
   }, [loadJobs]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -198,10 +198,11 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
             onChange={(event) => setLimit(Number(event.target.value))}
             className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           >
-            <option value={5}>5 per sumber</option>
-            <option value={10}>10 per sumber</option>
-            <option value={20}>20 per sumber</option>
-            <option value={30}>30 per sumber</option>
+            <option value={50}>50 per sumber</option>
+            <option value={100}>100 per sumber</option>
+            <option value={250}>250 per sumber</option>
+            <option value={500}>500 per sumber</option>
+            <option value={1000}>1000 per sumber</option>
           </select>
           <button type="submit" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
             Terapkan Filter
