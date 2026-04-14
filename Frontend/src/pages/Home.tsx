@@ -31,7 +31,7 @@ const CATEGORIES = [
   { name: 'Human Resource', icon: Briefcase, count: 346 },
 ];
 
-export default function Home({ user }: HomeProps) {
+export default function Home(_props: HomeProps) {
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [externalJobs, setExternalJobs] = useState<ExternalJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,8 +182,11 @@ export default function Home({ user }: HomeProps) {
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">{job.title}</h3>
-                <p className="text-slate-500 text-sm mt-1 mb-4 flex items-center gap-1">
+                <p className="text-slate-500 text-sm mt-1 mb-2 flex items-center gap-1">
                   {job.company} <span className="w-1 h-1 rounded-full bg-slate-400 mx-1"></span> {job.location}
+                </p>
+                <p className="text-slate-900 font-medium text-sm mb-4">
+                  {renderSalary(job)}
                 </p>
                 <p className="text-slate-600 text-sm line-clamp-2 flex-grow mb-6">{job.description}</p>
                 
