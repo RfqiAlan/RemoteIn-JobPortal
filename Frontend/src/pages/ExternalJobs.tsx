@@ -21,6 +21,32 @@ type ExternalJobsProps = { user: UserResponse | null };
 const POLLING_INTERVAL_MS = 2000;
 const SOURCES = ['remotive', 'arbeitnow', 'jobicy'];
 
+// ── Kategori broad dengan keyword matcher ────────────────────────────────
+type Category = { label: string; emoji: string; keywords: string[] };
+const CATEGORIES: Category[] = [
+  { label: 'Engineering',    emoji: '💻', keywords: ['engineer', 'developer', 'backend', 'frontend', 'fullstack', 'full-stack', 'software', 'programming', 'web', 'react', 'node', 'python', 'java', 'golang', 'ruby', 'php', 'typescript'] },
+  { label: 'Mobile',         emoji: '📱', keywords: ['mobile', 'android', 'ios', 'flutter', 'react native', 'swift', 'kotlin'] },
+  { label: 'Data & AI',      emoji: '📊', keywords: ['data', 'machine learning', 'ml', 'ai', 'artificial intelligence', 'analyst', 'analytics', 'scientist', 'bi', 'business intelligence', 'sql', 'tableau', 'etl', 'llm'] },
+  { label: 'DevOps & Cloud', emoji: '☁️', keywords: ['devops', 'cloud', 'aws', 'gcp', 'azure', 'infrastructure', 'kubernetes', 'docker', 'sre', 'platform', 'ci/cd', 'terraform', 'linux', 'sysadmin'] },
+  { label: 'Design',         emoji: '🎨', keywords: ['design', 'ui', 'ux', 'figma', 'product design', 'graphic', 'visual', 'creative', 'branding', 'illustrat'] },
+  { label: 'Marketing',      emoji: '📣', keywords: ['marketing', 'seo', 'growth', 'social media', 'content', 'copywriter', 'digital marketing', 'performance', 'ads', 'pr ', 'brand'] },
+  { label: 'Sales',          emoji: '🤝', keywords: ['sales', 'account executive', 'business development', 'account manager', 'revenue', 'crm', 'bdr', 'sdr'] },
+  { label: 'Customer Support',emoji: '🎧', keywords: ['customer support', 'customer success', 'customer service', 'support engineer', 'helpdesk', 'technical support', 'cx '] },
+  { label: 'Product',        emoji: '🗂️', keywords: ['product manager', 'product owner', 'pm ', 'scrum', 'agile', 'roadmap'] },
+  { label: 'Finance',        emoji: '💼', keywords: ['finance', 'accounting', 'bookkeep', 'controller', 'cfo', 'payroll', 'tax', 'audit', 'financial'] },
+  { label: 'Cybersecurity',  emoji: '🔒', keywords: ['security', 'cybersecurity', 'pentest', 'infosec', 'soc ', 'firewall', 'compliance', 'appsec'] },
+  { label: 'Writing',        emoji: '✍️', keywords: ['writer', 'editor', 'content writer', 'technical writer', 'journalist', 'blogger', 'documentation'] },
+];
+
+function jobMatchesCategory(job: ExternalJob, cat: Category): boolean {
+  const haystack = [
+    job.title,
+    job.company,
+    ...job.tags,
+  ].join(' ').toLowerCase();
+  return cat.keywords.some(kw => haystack.includes(kw.toLowerCase()));
+}
+
 export default function ExternalJobs({ user }: ExternalJobsProps) {
   // ── Remote state ──────────────────────────────────────────────
   const [data, setData] = useState<AggregatedJobList | null>(null);
@@ -36,6 +62,7 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
   const [keyword, setKeyword] = useState('');
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [hasSalary, setHasSalary] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'title'>('date');
   const [showFilters, setShowFilters] = useState(false);
@@ -90,6 +117,12 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
       jobs = jobs.filter(j => [...selectedTags].every(t => j.tags.includes(t)));
     }
 
+    // category
+    if (selectedCategory) {
+      const cat = CATEGORIES.find(c => c.label === selectedCategory);
+      if (cat) jobs = jobs.filter(j => jobMatchesCategory(j, cat));
+    }
+
     // salary
     if (hasSalary) {
       jobs = jobs.filter(j => !!j.salary);
@@ -107,11 +140,20 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
     }
 
     return jobs;
-  }, [data, keyword, selectedSources, selectedTags, hasSalary, sortBy]);
+  }, [data, keyword, selectedSources, selectedTags, selectedCategory, hasSalary, sortBy]);
+
+  // Count per category for badge
+  const categoryCount = useMemo(() => {
+    if (!data) return {};
+    return Object.fromEntries(
+      CATEGORIES.map(cat => [cat.label, data.jobs.filter(j => jobMatchesCategory(j, cat)).length])
+    );
+  }, [data]);
 
   const activeFilterCount =
     (selectedSources.size > 0 ? 1 : 0) +
     (selectedTags.size > 0 ? 1 : 0) +
+    (selectedCategory ? 1 : 0) +
     (hasSalary ? 1 : 0) +
     (keyword.trim() ? 1 : 0);
 
@@ -119,6 +161,7 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
     setKeyword('');
     setSelectedSources(new Set());
     setSelectedTags(new Set());
+    setSelectedCategory(null);
     setHasSalary(false);
     setSortBy('date');
   };
@@ -303,6 +346,42 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
         {/* Expanded filters */}
         {showFilters && (
           <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-4">
+
+            {/* Category chips */}
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <Tag className="h-3.5 w-3.5" /> Kategori Pekerjaan
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map(cat => {
+                  const active = selectedCategory === cat.label;
+                  const count = (categoryCount as Record<string, number>)[cat.label] ?? 0;
+                  return (
+                    <button
+                      key={cat.label}
+                      type="button"
+                      onClick={() => setSelectedCategory(active ? null : cat.label)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                        active
+                          ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-300 hover:text-indigo-600'
+                      }`}
+                    >
+                      <span>{cat.emoji}</span>
+                      {cat.label}
+                      {count > 0 && (
+                        <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                          active ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Source chips */}
             <div>
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
