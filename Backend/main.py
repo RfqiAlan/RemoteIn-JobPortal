@@ -44,6 +44,10 @@ def run_migrations():
             print("ℹ️  Migration: client_identifier already exists, skipped")
 
 run_migrations()
+
+# ── Auto-seed: isi data awal jika tabel kosong ─────────────────────────────
+from seed import seed_data
+seed_data()
 # ──────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
