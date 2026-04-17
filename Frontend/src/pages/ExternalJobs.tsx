@@ -26,12 +26,11 @@ function formatDate(value: string | null) {
 
 type ExternalJobsProps = {
   user: UserResponse | null;
-  token: string | null;
 };
 
 const POLLING_INTERVAL_MS = 2000;
 
-export default function ExternalJobs({ user, token }: ExternalJobsProps) {
+export default function ExternalJobs({ user }: ExternalJobsProps) {
   const [keyword, setKeyword] = useState('');
   const [limit, setLimit] = useState(100);
   const [data, setData] = useState<AggregatedJobList | null>(null);
@@ -68,16 +67,11 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
   };
 
   const handleRefreshRequest = async () => {
-    if (!token) {
-      setError('Silakan login sebagai jobseeker untuk melakukan refresh.');
-      return;
-    }
-
     setRefreshLoading(true);
     setError(null);
 
     try {
-      const request = await createExternalRefreshRequest(token);
+      const request = await createExternalRefreshRequest();
       setRefreshRequestId(request.request_id);
       setRefreshStatus({
         request_id: request.request_id,
@@ -96,7 +90,7 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
   };
 
   useEffect(() => {
-    if (!token || refreshRequestId === null) {
+    if (refreshRequestId === null) {
       return;
     }
 
@@ -105,7 +99,7 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
 
     const pollStatus = async () => {
       try {
-        const statusResult = await getExternalRefreshStatus(token, refreshRequestId);
+        const statusResult = await getExternalRefreshStatus(refreshRequestId);
         if (isCancelled) {
           return;
         }
@@ -137,7 +131,7 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
         clearTimeout(timeoutId);
       }
     };
-  }, [keyword, limit, loadJobs, refreshRequestId, token]);
+  }, [keyword, limit, loadJobs, refreshRequestId]);
 
   return (
     <div className="space-y-6">
@@ -151,23 +145,20 @@ export default function ExternalJobs({ user, token }: ExternalJobsProps) {
           <div>
             <p className="text-sm font-semibold text-slate-900">Refresh data dari source eksternal</p>
             <p className="text-sm text-slate-600">
-              Hanya role <span className="font-semibold">jobseeker</span> yang bisa kirim request refresh (cooldown 10 menit).
+              Refresh tersedia untuk semua orang (cooldown global 10 menit).
             </p>
           </div>
           <button
             type="button"
             onClick={() => void handleRefreshRequest()}
-            disabled={refreshLoading || !user || user.role !== 'jobseeker'}
+            disabled={refreshLoading}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {refreshLoading ? 'Mengirim request...' : 'Refresh Data'}
           </button>
         </div>
 
-        {!user && <p className="mt-3 text-sm text-amber-700">Login dulu untuk menggunakan tombol refresh.</p>}
-        {user && user.role !== 'jobseeker' && (
-          <p className="mt-3 text-sm text-amber-700">Role kamu bukan jobseeker, jadi tombol refresh dinonaktifkan.</p>
-        )}
+        {!user && <p className="mt-3 text-sm text-slate-500">Kamu tidak perlu login untuk melakukan refresh.</p>}
 
         {refreshStatus && (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">

@@ -1,7 +1,7 @@
 from datetime import datetime
 import enum
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -41,12 +41,11 @@ class ExternalSyncRequest(Base):
     __tablename__ = "external_sync_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    requested_by = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    client_identifier = Column(String(255), nullable=True, index=True)  # IP or anonymous identifier
     status = Column(Enum(SyncRequestStatus), default=SyncRequestStatus.pending, nullable=False, index=True)
     message = Column(String(500), nullable=True)
     total_jobs_processed = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     started_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)
-
-    requester = relationship("User", back_populates="external_sync_requests")

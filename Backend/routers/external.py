@@ -2,15 +2,13 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from auth.dependencies import require_jobseeker
 from database import SessionLocal, get_db
 from models.external import ExternalJob as ExternalJobRecord
 from models.external import ExternalSyncRequest, SyncRequestStatus
-from models.user import User
 from schemas.external import (
     AggregatedJobList,
     ExternalJob,
@@ -139,18 +137,19 @@ async def run_external_sync(sync_request_id: int) -> None:
     "/refresh-request",
     response_model=SyncRequestResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Jobseeker meminta refresh data external jobs (pakai cooldown)",
+    summary="Siapa saja bisa meminta refresh data external jobs (cooldown global 10 menit)",
 )
 def create_refresh_request(
+    request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_jobseeker),
 ):
-    latest_request = db.query(ExternalSyncRequest).filter(
-        ExternalSyncRequest.requested_by == current_user.id
-    ).order_by(ExternalSyncRequest.created_at.desc()).first()
-
+    # Gunakan global cooldown — cegah spam dari siapapun
     now = datetime.utcnow()
+    latest_request = db.query(ExternalSyncRequest).order_by(
+        ExternalSyncRequest.created_at.desc()
+    ).first()
+
     if latest_request is not None:
         elapsed_seconds = int((now - latest_request.created_at).total_seconds())
         if elapsed_seconds < COOLDOWN_SECONDS:
@@ -160,8 +159,12 @@ def create_refresh_request(
                 detail=f"Cooldown aktif. Coba lagi dalam {remaining_seconds} detik.",
             )
 
+    # Ambil IP sebagai identifier anonim
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+
     request_record = ExternalSyncRequest(
-        requested_by=current_user.id,
+        requested_by=None,
+        client_identifier=client_ip,
         status=SyncRequestStatus.pending,
         message="Permintaan refresh diterima.",
     )
@@ -183,12 +186,11 @@ def create_refresh_request(
 @router.get(
     "/refresh-status/{request_id}",
     response_model=SyncStatusResponse,
-    summary="Cek status refresh external jobs",
+    summary="Cek status refresh external jobs (public)",
 )
 def get_refresh_status(
     request_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_jobseeker),
 ):
     request_record = db.query(ExternalSyncRequest).filter(
         ExternalSyncRequest.id == request_id
@@ -197,11 +199,6 @@ def get_refresh_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Request refresh dengan ID {request_id} tidak ditemukan",
-        )
-    if request_record.requested_by != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Kamu tidak punya akses ke request refresh ini",
         )
 
     return SyncStatusResponse(
