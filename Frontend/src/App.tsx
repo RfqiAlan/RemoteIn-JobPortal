@@ -84,7 +84,7 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-slate-50">
         <Navbar user={user} onLogout={handleLogout} />
-        <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-24 sm:px-6">
+        <main className="mx-auto w-full max-w-screen-2xl px-4 pb-10 pt-24 sm:px-8">
           {sessionLoading ? (
             <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-600">Memuat sesi...</div>
           ) : (

@@ -218,7 +218,7 @@ def get_refresh_status(
     summary="Ambil external jobs dari database hasil sinkronisasi",
 )
 def get_aggregated_jobs(
-    limit: int = Query(default=100, ge=1, le=1000, description="Jumlah job per sumber"),
+    limit: int = Query(default=1000, ge=1, le=2000, description="Jumlah job per sumber"),
     keyword: Optional[str] = Query(default=None, description="Filter keyword di judul atau company"),
     db: Session = Depends(get_db),
 ):

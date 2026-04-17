@@ -32,7 +32,7 @@ const POLLING_INTERVAL_MS = 2000;
 
 export default function ExternalJobs({ user }: ExternalJobsProps) {
   const [keyword, setKeyword] = useState('');
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(1000);
   const [data, setData] = useState<AggregatedJobList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
   }, []);
 
   useEffect(() => {
-    void loadJobs('', 100);
+    void loadJobs('', 1000);
   }, [loadJobs]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -215,7 +215,7 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
             </p>
 
             {data?.jobs.length ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {data.jobs.map((job) => (
                   <article key={job.id} className="rounded-xl border border-slate-200 p-4 hover:border-primary-200 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between gap-2">
