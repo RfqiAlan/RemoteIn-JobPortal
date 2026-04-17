@@ -92,7 +92,7 @@ export default function App() {
               <Route path="/" element={<Home user={user} />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:jobId" element={<JobDetail user={user} />} />
-              <Route path="/remote-jobs" element={<ExternalJobs user={user} />} />
+              <Route path="/remote-jobs" element={<ExternalJobs />} />
               <Route path="/remote-jobs/:jobId" element={<ExternalJobDetail />} />
               <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login onLoggedIn={handleLoggedIn} />} />
               <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
