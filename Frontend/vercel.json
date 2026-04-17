@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://remotein-jobportal-production.up.railway.app/:path*"
+    },
+    {
       "source": "/(.*)",
-      "destination": "frontend/index.html"
+      "destination": "/index.html"
     }
   ]
 }
