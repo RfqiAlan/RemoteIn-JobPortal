@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getExternalJob } from '../lib/api';
-import type { ExternalJob, UserResponse } from '../types/api';
+import type { ExternalJob } from '../types/api';
 import { ArrowLeft, ExternalLink, Briefcase, MapPin, Tag } from 'lucide-react';
 
-type ExternalJobDetailProps = {
-  user: UserResponse | null;
-};
-
-export default function ExternalJobDetail({ user }: ExternalJobDetailProps) {
+export default function ExternalJobDetail() {
   const { jobId } = useParams<{ jobId: string }>();
   const [job, setJob] = useState<ExternalJob | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +41,7 @@ export default function ExternalJobDetail({ user }: ExternalJobDetailProps) {
         <p className="text-red-700">{error ?? 'External Job tidak ditemukan.'}</p>
         <Link to="/remote-jobs" className="text-sm font-semibold text-primary hover:text-primary-hover">
           Kembali ke daftar external jobs
-        </Link>
+   q     </Link>
       </div>
     );
   }
