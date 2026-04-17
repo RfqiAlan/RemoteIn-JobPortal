@@ -1,54 +1,51 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ExternalLink, Search } from 'lucide-react';
+import { Calendar, ExternalLink, Search, RefreshCw, Filter, X, ChevronDown, Briefcase, MapPin, Tag } from 'lucide-react';
 import { createExternalRefreshRequest, getExternalJobs, getExternalRefreshStatus } from '../lib/api';
-import type { AggregatedJobList, SyncStatusResponse, UserResponse } from '../types/api';
+import type { AggregatedJobList, ExternalJob, SyncStatusResponse, UserResponse } from '../types/api';
 
-const SOURCE_BADGE: Record<string, string> = {
-  remotive: 'bg-blue-100 text-blue-700',
-  arbeitnow: 'bg-emerald-100 text-emerald-700',
-  jobicy: 'bg-purple-100 text-purple-700',
+const SOURCE_BADGE: Record<string, { bg: string; text: string; dot: string }> = {
+  remotive:  { bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-blue-500'    },
+  arbeitnow: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  jobicy:    { bg: 'bg-purple-50',  text: 'text-purple-700',  dot: 'bg-purple-500'  },
 };
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed.toLocaleDateString('id-ID');
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-type ExternalJobsProps = {
-  user: UserResponse | null;
-};
-
+type ExternalJobsProps = { user: UserResponse | null };
 const POLLING_INTERVAL_MS = 2000;
+const SOURCES = ['remotive', 'arbeitnow', 'jobicy'];
 
 export default function ExternalJobs({ user }: ExternalJobsProps) {
-  const [keyword, setKeyword] = useState('');
-  const [limit, setLimit] = useState(1000);
+  // ── Remote state ──────────────────────────────────────────────
   const [data, setData] = useState<AggregatedJobList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Refresh state ─────────────────────────────────────────────
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<SyncStatusResponse | null>(null);
   const [refreshRequestId, setRefreshRequestId] = useState<number | null>(null);
 
-  const loadJobs = useCallback(async (nextKeyword: string, nextLimit: number) => {
+  // ── Filter state (client-side) ─────────────────────────────────
+  const [keyword, setKeyword] = useState('');
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [hasSalary, setHasSalary] = useState(false);
+  const [sortBy, setSortBy] = useState<'date' | 'title'>('date');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // ── Load all data once ────────────────────────────────────────
+  const loadJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const result = await getExternalJobs({
-        keyword: nextKeyword,
-        limit: nextLimit,
-      });
+      const result = await getExternalJobs({ limit: 1000 });
       setData(result);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Gagal mengambil external jobs.');
@@ -57,19 +54,95 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
     }
   }, []);
 
-  useEffect(() => {
-    void loadJobs('', 1000);
-  }, [loadJobs]);
+  useEffect(() => { void loadJobs(); }, [loadJobs]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void loadJobs(keyword, limit);
+  // ── Derived: all unique tags from data ────────────────────────
+  const allTags = useMemo(() => {
+    if (!data) return [];
+    const tagSet = new Set<string>();
+    data.jobs.forEach(j => j.tags.forEach(t => tagSet.add(t)));
+    return [...tagSet].sort();
+  }, [data]);
+
+  // ── Client-side filtering & sorting ──────────────────────────
+  const filteredJobs = useMemo((): ExternalJob[] => {
+    if (!data) return [];
+    let jobs = [...data.jobs];
+
+    // keyword
+    const kw = keyword.trim().toLowerCase();
+    if (kw) {
+      jobs = jobs.filter(j =>
+        j.title.toLowerCase().includes(kw) ||
+        j.company.toLowerCase().includes(kw) ||
+        j.location.toLowerCase().includes(kw) ||
+        j.tags.some(t => t.toLowerCase().includes(kw))
+      );
+    }
+
+    // source
+    if (selectedSources.size > 0) {
+      jobs = jobs.filter(j => selectedSources.has(j.source));
+    }
+
+    // tags
+    if (selectedTags.size > 0) {
+      jobs = jobs.filter(j => [...selectedTags].every(t => j.tags.includes(t)));
+    }
+
+    // salary
+    if (hasSalary) {
+      jobs = jobs.filter(j => !!j.salary);
+    }
+
+    // sort
+    if (sortBy === 'date') {
+      jobs.sort((a, b) => {
+        const da = a.published_at ? new Date(a.published_at).getTime() : 0;
+        const db = b.published_at ? new Date(b.published_at).getTime() : 0;
+        return db - da;
+      });
+    } else {
+      jobs.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    return jobs;
+  }, [data, keyword, selectedSources, selectedTags, hasSalary, sortBy]);
+
+  const activeFilterCount =
+    (selectedSources.size > 0 ? 1 : 0) +
+    (selectedTags.size > 0 ? 1 : 0) +
+    (hasSalary ? 1 : 0) +
+    (keyword.trim() ? 1 : 0);
+
+  const clearFilters = () => {
+    setKeyword('');
+    setSelectedSources(new Set());
+    setSelectedTags(new Set());
+    setHasSalary(false);
+    setSortBy('date');
   };
 
+  const toggleSource = (src: string) => {
+    setSelectedSources(prev => {
+      const next = new Set(prev);
+      next.has(src) ? next.delete(src) : next.add(src);
+      return next;
+    });
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      return next;
+    });
+  };
+
+  // ── Refresh ───────────────────────────────────────────────────
   const handleRefreshRequest = async () => {
     setRefreshLoading(true);
     setError(null);
-
     try {
       const request = await createExternalRefreshRequest();
       setRefreshRequestId(request.request_id);
@@ -82,190 +155,338 @@ export default function ExternalJobs({ user }: ExternalJobsProps) {
         started_at: null,
         finished_at: null,
       });
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Gagal membuat request refresh.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal membuat request refresh.');
     } finally {
       setRefreshLoading(false);
     }
   };
 
   useEffect(() => {
-    if (refreshRequestId === null) {
-      return;
-    }
-
+    if (refreshRequestId === null) return;
     let isCancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const pollStatus = async () => {
       try {
         const statusResult = await getExternalRefreshStatus(refreshRequestId);
-        if (isCancelled) {
-          return;
-        }
-
+        if (isCancelled) return;
         setRefreshStatus(statusResult);
-
         if (statusResult.status === 'pending' || statusResult.status === 'running') {
-          timeoutId = setTimeout(() => {
-            void pollStatus();
-          }, POLLING_INTERVAL_MS);
+          timeoutId = setTimeout(() => { void pollStatus(); }, POLLING_INTERVAL_MS);
           return;
         }
-
-        if (statusResult.status === 'success') {
-          void loadJobs(keyword, limit);
-        }
+        if (statusResult.status === 'success') void loadJobs();
       } catch (statusError) {
-        if (!isCancelled) {
-          setError(statusError instanceof Error ? statusError.message : 'Gagal memeriksa status refresh.');
-        }
+        if (!isCancelled) setError(statusError instanceof Error ? statusError.message : 'Gagal memeriksa status refresh.');
       }
     };
 
     void pollStatus();
-
     return () => {
       isCancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [keyword, limit, loadJobs, refreshRequestId]);
+  }, [loadJobs, refreshRequestId]);
 
+  // ── Render ────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold text-slate-900">External Remote Jobs</h1>
-        <p className="mt-2 text-slate-600">Endpoint: <code>/external/aggregate</code> dengan filter keyword + limit.</p>
-      </header>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">External Remote Jobs</h1>
+          <p className="mt-1 text-slate-500 text-sm">
+            Data langsung dari Remotive, Arbeitnow &amp; Jobicy — difilter secara real-time di browser.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleRefreshRequest()}
+          disabled={refreshLoading}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshLoading ? 'animate-spin' : ''}`} />
+          {refreshLoading ? 'Memuat...' : 'Refresh Data'}
+        </button>
+      </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Refresh data dari source eksternal</p>
-            <p className="text-sm text-slate-600">
-              Refresh tersedia untuk semua orang (cooldown global 10 menit).
-            </p>
+      {/* Refresh Status */}
+      {refreshStatus && (
+        <div className={`rounded-xl border p-3 text-sm flex items-center gap-3 ${
+          refreshStatus.status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
+          refreshStatus.status === 'failed'  ? 'border-red-200 bg-red-50 text-red-800' :
+          'border-indigo-200 bg-indigo-50 text-indigo-800'
+        }`}>
+          <RefreshCw className={`h-4 w-4 shrink-0 ${refreshStatus.status === 'running' || refreshStatus.status === 'pending' ? 'animate-spin' : ''}`} />
+          <span>
+            <strong className="capitalize">{refreshStatus.status}</strong>
+            {refreshStatus.message ? ` — ${refreshStatus.message}` : ''}
+            {refreshStatus.finished_at ? ` (${refreshStatus.total_jobs_processed} jobs)` : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Filter Bar */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* Top bar: search + sort + toggle */}
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          {/* Search */}
+          <label className="relative flex-1 min-w-[200px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              type="text"
+              placeholder="Cari judul, perusahaan, lokasi, atau tag…"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
+            />
+          </label>
+
+          {/* Sort */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as 'date' | 'title')}
+              className="appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2 pl-3 pr-8 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition cursor-pointer"
+            >
+              <option value="date">Terbaru</option>
+              <option value="title">A–Z Judul</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           </div>
+
+          {/* Salary toggle */}
           <button
             type="button"
-            onClick={() => void handleRefreshRequest()}
-            disabled={refreshLoading}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => setHasSalary(v => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              hasSalary
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+            }`}
           >
-            {refreshLoading ? 'Mengirim request...' : 'Refresh Data'}
+            💰 Ada Salary
           </button>
+
+          {/* Advanced filter toggle */}
+          <button
+            type="button"
+            onClick={() => setShowFilters(v => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              showFilters || (selectedSources.size > 0 || selectedTags.size > 0)
+                ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filter
+            {(selectedSources.size + selectedTags.size) > 0 && (
+              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white font-bold">
+                {selectedSources.size + selectedTags.size}
+              </span>
+            )}
+          </button>
+
+          {/* Clear all */}
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" /> Reset
+            </button>
+          )}
         </div>
 
-        {!user && <p className="mt-3 text-sm text-slate-500">Kamu tidak perlu login untuk melakukan refresh.</p>}
-
-        {refreshStatus && (
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-            <p className="font-semibold text-slate-900">Status: {refreshStatus.status}</p>
-            {refreshStatus.message && <p className="mt-1 text-slate-600">{refreshStatus.message}</p>}
-            {refreshStatus.finished_at && (
-              <p className="mt-1 text-slate-500">
-                Selesai: {new Date(refreshStatus.finished_at).toLocaleString('id-ID')} ({refreshStatus.total_jobs_processed} job diproses)
+        {/* Expanded filters */}
+        {showFilters && (
+          <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-4">
+            {/* Source chips */}
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <Briefcase className="h-3.5 w-3.5" /> Source
               </p>
+              <div className="flex flex-wrap gap-2">
+                {SOURCES.map(src => {
+                  const badge = SOURCE_BADGE[src] ?? { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-400' };
+                  const active = selectedSources.has(src);
+                  return (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => toggleSource(src)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold capitalize transition-all ${
+                        active
+                          ? `${badge.bg} ${badge.text} border-current`
+                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${active ? badge.dot : 'bg-slate-300'}`} />
+                      {src}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tag chips */}
+            {allTags.length > 0 && (
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <Tag className="h-3.5 w-3.5" /> Kategori / Tag
+                </p>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {allTags.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all ${
+                        selectedTags.has(tag)
+                          ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
-      </section>
+      </div>
 
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="grid gap-3 sm:grid-cols-[1fr_160px_auto]">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <input
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              type="text"
-              placeholder="Cari keyword, contoh: react"
-              className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-          <select
-            value={limit}
-            onChange={(event) => setLimit(Number(event.target.value))}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-          >
-            <option value={50}>50 per sumber</option>
-            <option value={100}>100 per sumber</option>
-            <option value={250}>250 per sumber</option>
-            <option value={500}>500 per sumber</option>
-            <option value={1000}>1000 per sumber</option>
-          </select>
-          <button type="submit" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-            Terapkan Filter
-          </button>
-        </div>
-      </form>
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      )}
 
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>}
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+      {/* Results */}
+      <section>
         {loading ? (
-          <p className="text-slate-500">Memuat external jobs...</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                <div className="h-3 w-16 rounded bg-slate-200" />
+                <div className="h-4 w-3/4 rounded bg-slate-200" />
+                <div className="h-3 w-1/2 rounded bg-slate-200" />
+                <div className="flex gap-2 mt-2">
+                  <div className="h-5 w-12 rounded-full bg-slate-200" />
+                  <div className="h-5 w-14 rounded-full bg-slate-200" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <>
-            <p className="mb-4 text-sm text-slate-600">
-              Total: <span className="font-semibold text-slate-900">{data?.total ?? 0}</span> jobs dari{' '}
-              <span className="font-semibold text-slate-900">{data?.sources.length ?? 0}</span> sumber.
+            <p className="mb-3 text-sm text-slate-500">
+              Menampilkan{' '}
+              <span className="font-semibold text-slate-900">{filteredJobs.length}</span>
+              {data && filteredJobs.length !== data.total && (
+                <> dari <span className="font-semibold text-slate-900">{data.total}</span></>
+              )}{' '}
+              jobs
+              {activeFilterCount > 0 && (
+                <span className="ml-1 text-indigo-600">({activeFilterCount} filter aktif)</span>
+              )}
             </p>
 
-            {data?.jobs.length ? (
+            {filteredJobs.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {data.jobs.map((job) => (
-                  <article key={job.id} className="rounded-xl border border-slate-200 p-4 hover:border-primary-200 hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`rounded px-2 py-1 text-xs font-semibold ${SOURCE_BADGE[job.source] ?? 'bg-slate-100 text-slate-700'}`}>
-                        {job.source}
-                      </span>
-                      {formatDate(job.published_at) && (
-                        <span className="flex items-center gap-1 text-xs text-slate-500">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(job.published_at)}
+                {filteredJobs.map(job => {
+                  const badge = SOURCE_BADGE[job.source] ?? { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-400' };
+                  return (
+                    <article
+                      key={job.id}
+                      className="group flex flex-col rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200"
+                    >
+                      {/* Source + Date */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${badge.bg} ${badge.text}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
+                          {job.source}
                         </span>
-                      )}
-                    </div>
-
-                    <h2 className="mt-3 text-lg font-semibold text-slate-900">{job.title}</h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {job.company} • {job.location}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">{job.salary ?? 'Salary tidak disebutkan'}</p>
-
-                    {job.tags.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {job.tags.slice(0, 4).map((tag) => (
-                          <span key={`${job.id}-${tag}`} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
-                            {tag}
+                        {formatDate(job.published_at) && (
+                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(job.published_at)}
                           </span>
-                        ))}
+                        )}
                       </div>
-                    )}
 
-                    <div className="mt-4 flex items-center gap-3">
-                      <Link
-                        to={`/remote-jobs/${job.id}`}
-                        className="text-sm font-semibold text-primary hover:text-primary-hover">
-                        View Details
-                      </Link>
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-                      >
-                        Apply now <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </div>
-                  </article>
-                ))}
+                      {/* Title */}
+                      <h2 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-indigo-700 transition-colors">
+                        {job.title}
+                      </h2>
+
+                      {/* Company + Location */}
+                      <div className="mt-1.5 space-y-0.5">
+                        <p className="text-xs text-slate-600 font-medium truncate">{job.company}</p>
+                        <p className="flex items-center gap-1 text-xs text-slate-400">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{job.location}</span>
+                        </p>
+                      </div>
+
+                      {/* Salary */}
+                      {job.salary && (
+                        <p className="mt-2 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 w-fit">
+                          💰 {job.salary}
+                        </p>
+                      )}
+
+                      {/* Tags */}
+                      {job.tags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {job.tags.slice(0, 3).map(tag => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => { toggleTag(tag); setShowFilters(true); }}
+                              className="rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 px-2 py-0.5 text-[11px] text-slate-500 transition-colors"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                          {job.tags.length > 3 && (
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-400">
+                              +{job.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="mt-auto pt-4 flex items-center gap-3 border-t border-slate-100">
+                        <Link
+                          to={`/remote-jobs/${job.id}`}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                        >
+                          Detail →
+                        </Link>
+                        <a
+                          href={job.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-auto inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          Apply <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-slate-500">Tidak ada job yang cocok dengan filter saat ini.</p>
+              <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+                <p className="text-slate-400 text-sm">Tidak ada job yang cocok dengan filter.</p>
+                <button onClick={clearFilters} className="mt-3 text-sm text-indigo-600 hover:underline">
+                  Reset filter
+                </button>
+              </div>
             )}
           </>
         )}
