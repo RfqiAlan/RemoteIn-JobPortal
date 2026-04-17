@@ -12,7 +12,7 @@ import type {
   UserResponse,
 } from '../types/api';
 
-const API_PREFIX = '/api';
+const API_PREFIX = import.meta.env.VITE_API_URL || '/api';
 
 function parseApiError(payload: unknown, fallback: string): string {
   if (typeof payload === 'string' && payload.trim()) {
