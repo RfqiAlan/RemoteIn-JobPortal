@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from database import engine, Base
+from sqlalchemy import text
+from database import engine, Base, DB_NAME
 
 # Import models sebelum create_all agar relasi terbaca dengan benar
 from models import user, job, external
@@ -9,6 +10,41 @@ from routers import auth, jobs, external
 
 # Buat semua tabel di database SQLite
 Base.metadata.create_all(bind=engine)
+
+# ── Auto-migration: jalankan sekali, aman diulang ──────────────────────────
+def run_migrations():
+    with engine.connect() as conn:
+        # 1. Buat requested_by nullable jika belum
+        try:
+            conn.execute(text(
+                "ALTER TABLE external_sync_requests MODIFY COLUMN requested_by INT NULL"
+            ))
+            conn.commit()
+            print("✅ Migration: requested_by is now nullable")
+        except Exception:
+            pass  # Sudah nullable atau tabel belum ada, skip
+
+        # 2. Tambah kolom client_identifier jika belum ada
+        result = conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA = :schema "
+            "AND TABLE_NAME = 'external_sync_requests' "
+            "AND COLUMN_NAME = 'client_identifier'"
+        ), {"schema": DB_NAME})
+        (col_exists,) = result.fetchone()
+
+        if col_exists == 0:
+            conn.execute(text(
+                "ALTER TABLE external_sync_requests "
+                "ADD COLUMN client_identifier VARCHAR(255) NULL"
+            ))
+            conn.commit()
+            print("✅ Migration: client_identifier column added")
+        else:
+            print("ℹ️  Migration: client_identifier already exists, skipped")
+
+run_migrations()
+# ──────────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="RemoteIn API",
