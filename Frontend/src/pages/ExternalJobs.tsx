@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ExternalLink, Search, RefreshCw, Filter, X, ChevronDown, Briefcase, MapPin, Tag } from 'lucide-react';
 import { createExternalRefreshRequest, getExternalJobs, getExternalRefreshStatus } from '../lib/api';
-import type { AggregatedJobList, ExternalJob, SyncStatusResponse, UserResponse } from '../types/api';
+import type { AggregatedJobList, ExternalJob, SyncStatusResponse } from '../types/api';
 
 const SOURCE_BADGE: Record<string, { bg: string; text: string; dot: string }> = {
   remotive:  { bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-blue-500'    },
@@ -17,7 +17,6 @@ function formatDate(value: string | null) {
   return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-type ExternalJobsProps = { user: UserResponse | null };
 const POLLING_INTERVAL_MS = 2000;
 const SOURCES = ['remotive', 'arbeitnow', 'jobicy'];
 
@@ -47,7 +46,7 @@ function jobMatchesCategory(job: ExternalJob, cat: Category): boolean {
   return cat.keywords.some(kw => haystack.includes(kw.toLowerCase()));
 }
 
-export default function ExternalJobs({ user }: ExternalJobsProps) {
+export default function ExternalJobs() {
   // ── Remote state ──────────────────────────────────────────────
   const [data, setData] = useState<AggregatedJobList | null>(null);
   const [loading, setLoading] = useState(true);
