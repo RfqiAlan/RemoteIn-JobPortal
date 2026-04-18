@@ -1,4 +1,4 @@
-# RemoteIn — Job Portal
+# RemoteIn: Job Portal
 
 Platform lowongan kerja remote full-stack berbasis **FastAPI** (Backend) + **React/Vite** (Frontend), dengan fitur auth JWT, manajemen job internal, dan agregasi job eksternal (Remotive, Arbeitnow, Jobicy).
 
@@ -44,7 +44,7 @@ RemoteIn-JobPortal/
 
 ## 🚀 Menjalankan Project
 
-### Opsi A — Docker (Direkomendasikan)
+### Opsi A Docker (Direkomendasikan)
 
 > Prasyarat: Docker Desktop aktif.
 
@@ -83,7 +83,7 @@ docker compose down -v
 
 ---
 
-### Opsi B — Manual (Local Dev)
+### Opsi B Manual (Local Dev)
 
 > Prasyarat: Python 3.11+, Node.js 18+, MySQL 8.
 

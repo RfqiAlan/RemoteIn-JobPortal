@@ -64,5 +64,5 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     summary="Lihat profil user yang sedang login"
 )
 def get_me(current_user: User = Depends(get_current_user)):
-    # Endpoint ini terproteksi JWT — wajib ada Bearer token di header
+    # Endpoint ini terproteksi JWT: wajib ada Bearer token di header
     return current_user

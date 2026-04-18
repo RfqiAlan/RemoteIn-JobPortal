@@ -239,7 +239,7 @@ export default function ExternalJobs() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">External Remote Jobs</h1>
           <p className="mt-1 text-slate-500 text-sm">
-            Data langsung dari Remotive, Arbeitnow &amp; Jobicy — difilter secara real-time di browser.
+            Data langsung dari Remotive, Arbeitnow &amp; Jobicy: difilter secara real-time di browser.
           </p>
         </div>
         <button

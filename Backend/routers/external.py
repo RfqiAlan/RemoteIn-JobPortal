@@ -144,7 +144,7 @@ def create_refresh_request(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    # Gunakan global cooldown — cegah spam dari siapapun
+    # Gunakan global cooldown untuk cegah spam dari siapapun
     now = datetime.utcnow()
     latest_request = db.query(ExternalSyncRequest).order_by(
         ExternalSyncRequest.created_at.desc()

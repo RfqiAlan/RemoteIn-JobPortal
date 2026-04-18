@@ -52,7 +52,7 @@ seed_data()
 
 app = FastAPI(
     title="RemoteIn API",
-    description="Platform lowongan kerja remote — RESTful API berbasis FastAPI",
+    description="Platform lowongan kerja remote: RESTful API berbasis FastAPI",
     version="1.0.0"
 )
 

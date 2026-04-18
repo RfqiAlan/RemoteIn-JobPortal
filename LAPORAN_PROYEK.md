@@ -76,4 +76,4 @@ Proyek ini menjunjung tinggi kualitas kode melalui:
 -   **Komentar**: Penjelasan terdokumentasi pada bagian kritis seperti *dependency security* dan *external fetcher*.
 
 ---
-**RemoteIn — Solusi Terpusat Lowongan Kerja Remote.**
+**RemoteIn: Solusi Terpusat Lowongan Kerja Remote.**

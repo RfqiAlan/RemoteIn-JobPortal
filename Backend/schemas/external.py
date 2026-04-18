@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class ExternalJob(BaseModel):
     """
-    Schema normalisasi — format seragam untuk semua job dari sumber eksternal.
+    Schema normalisasi: format seragam untuk semua job dari sumber eksternal.
     Tidak semua field tersedia di semua sumber, jadi semuanya Optional.
     """
     id: str                          # ID unik: "{source}_{id_asli}"

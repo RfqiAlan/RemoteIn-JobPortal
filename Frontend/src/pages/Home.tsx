@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, MapPin, Briefcase, PenTool, Code, Megaphone, Monitor, Building2, ArrowRight } from 'lucide-react';
 import { getExternalJobs, getJobs } from '../lib/api';
 import type { ExternalJob, JobResponse, UserResponse } from '../types/api';
+import BA from "../assets/BA.png"
 
 type HomeProps = {
   user: UserResponse | null;
@@ -97,9 +98,12 @@ export default function Home(_props: HomeProps) {
           <div className="hidden lg:block relative">
             {/* Hero Image / Illustration Placeholder */}
             <div className="bg-primary-50 rounded-full w-[450px] h-[450px] mx-auto overflow-hidden border-8 border-white shadow-xl relative">
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-primary-300">
-                <Monitor className="w-32 h-32 mb-4 opacity-50" />
-                <span className="font-bold text-xl opacity-75 text-primary-400">Illustration Area</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <img
+                  src={BA}
+                  alt="Foto saya"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>

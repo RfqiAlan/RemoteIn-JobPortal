@@ -51,7 +51,6 @@ export default function Jobs() {
     <div className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-white p-6">
         <h1 className="text-3xl font-bold text-slate-900">Internal Jobs</h1>
-        <p className="mt-2 text-slate-600">Data langsung dari endpoint <code>/jobs</code>.</p>
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
