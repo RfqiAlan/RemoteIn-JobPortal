@@ -110,25 +110,13 @@ export default function Home(_props: HomeProps) {
         </div>
       </section>
 
-      {/* Companies Banner */}
-      <section className="py-10 border-y border-slate-100">
-        <p className="text-slate-400 text-sm font-medium mb-6">Companies we helped grow</p>
-        <div className="flex flex-wrap gap-8 justify-between opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
-          <div className="text-xl font-bold font-heading">Vodafone</div>
-          <div className="text-xl font-bold font-heading">Intel</div>
-          <div className="text-xl font-bold font-heading">Tesla</div>
-          <div className="text-xl font-bold font-heading">AMD</div>
-          <div className="text-xl font-bold font-heading">Talkit</div>
-        </div>
-      </section>
-
       {/* Explore By Category Section */}
       <section>
         <div className="flex justify-between items-end mb-10">
           <div>
             <h2 className="text-3xl font-bold text-slate-900 font-heading">Explore by <span className="text-primary">category</span></h2>
           </div>
-          <Link to="/jobs" className="text-primary font-medium flex items-center gap-2 hover:text-primary-hover group">
+          <Link to="/remote-jobs" className="text-primary font-medium flex items-center gap-2 hover:text-primary-hover group">
             Show all jobs 
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
