@@ -22,9 +22,7 @@ services:
       retries: 10
 
   backend:
-    build:
-      context: .
-      dockerfile: Backend/Dockerfile
+    build: ./Backend
     container_name: remotein-backend
     ports:
       - "8000:8000"
