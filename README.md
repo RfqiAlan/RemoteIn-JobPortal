@@ -79,10 +79,6 @@ docker compose down
 docker compose down -v
 ```
 
-> Catatan Linux (filesystem case-sensitive): jika build gagal, sesuaikan path di `docker-compose.yml` dari `./backend`/`./frontend` menjadi `./Backend`/`./Frontend`.
-
----
-
 ### Opsi B Manual (Local Dev)
 
 > Prasyarat: Python 3.11+, Node.js 18+, MySQL 8.

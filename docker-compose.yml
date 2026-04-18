@@ -22,12 +22,14 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
     container_name: remotein-backend
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./Backend:/app
     environment:
       - DB_HOST=mysql               # ← Nama service MySQL di atas, BUKAN localhost
       - DB_PORT=3306
@@ -40,12 +42,12 @@ services:
         condition: service_healthy  # Tunggu MySQL benar-benar siap sebelum backend start
 
   frontend:
-    build: ./frontend
+    build: ./Frontend
     container_name: remotein-frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ./Frontend:/app
       - /app/node_modules
     environment:
       - VITE_API_TARGET=http://backend:8000
