@@ -24,8 +24,7 @@ RemoteIn-JobPortal/
 │   ├── database.py             # Koneksi DB
 │   ├── main.py                 # Entry point FastAPI (+ auto migration + auto seed)
 │   ├── seed.py                 # Seed data dummy awal
-│   ├── migrate_anonymous_refresh.py
-│   └── requirements.txt
+│   └── migrate_anonymous_refresh.py
 ├── Frontend/
 │   ├── public/
 │   ├── src/
@@ -38,6 +37,7 @@ RemoteIn-JobPortal/
 │   ├── package.json
 │   └── README.md               # Dokumentasi frontend ringkas
 ├── docker-compose.yml
+├── requirements.txt
 ├── LAPORAN_PROYEK.md
 └── README.md
 ```
@@ -93,7 +93,7 @@ docker compose down -v
 cd Backend
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 ```
 
 Buat `.env` di folder `Backend/`:
