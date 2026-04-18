@@ -15,8 +15,8 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,       # Cek koneksi sebelum dipakai (penting untuk MySQL)
-    pool_recycle=3600,        # Recycle koneksi tiap 1 jam (hindari MySQL timeout)
+    pool_pre_ping=True,       # Cek koneksi sebelum dipakai
+    pool_recycle=3600,        # Recycle koneksi tiap 1 jam
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
