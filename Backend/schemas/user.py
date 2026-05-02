@@ -5,6 +5,7 @@ from enum import Enum
 class RoleEnum(str, Enum):
     jobseeker = "jobseeker"
     employer = "employer"
+    admin = "admin"
 
 class UserCreate(BaseModel):
     name: str
