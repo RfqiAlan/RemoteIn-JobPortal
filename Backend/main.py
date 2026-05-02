@@ -12,6 +12,8 @@ from routers import auth, jobs, external, profiles, applications, saved_jobs
 Base.metadata.create_all(bind=engine)
 
 # ── Auto-migration: jalankan sekali, aman diulang ──────────────────────────
+from migrate_role_enum import migrate as migrate_roles
+
 def run_migrations():
     with engine.connect() as conn:
         # 1. Buat requested_by nullable jika belum
@@ -42,6 +44,11 @@ def run_migrations():
             print("✅ Migration: client_identifier column added")
         else:
             print("ℹ️  Migration: client_identifier already exists, skipped")
+
+    try:
+        migrate_roles()
+    except Exception as e:
+        print(f"⚠️  Migration for roles failed: {e}")
 
 run_migrations()
 
