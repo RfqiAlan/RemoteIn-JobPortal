@@ -20,3 +20,6 @@ class User(Base):
 
     # Relasi One-to-Many: satu User bisa punya banyak Job
     jobs = relationship("Job", back_populates="owner")
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    applications = relationship("Application", back_populates="applicant", cascade="all, delete-orphan")
+    saved_jobs = relationship("SavedJob", back_populates="user", cascade="all, delete-orphan")

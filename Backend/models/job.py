@@ -19,3 +19,5 @@ class Job(Base):
 
     # Relasi Many-to-One: banyak Job dimiliki satu User
     owner = relationship("User", back_populates="jobs")
+    applications = relationship("Application", back_populates="job", cascade="all, delete-orphan")
+    saved_by_users = relationship("SavedJob", back_populates="job", cascade="all, delete-orphan")
