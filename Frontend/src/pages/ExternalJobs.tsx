@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ExternalLink, Search, RefreshCw, Filter, X, ChevronDown, Briefcase, MapPin, Tag } from 'lucide-react';
-import { createExternalRefreshRequest, getExternalJobs, getExternalRefreshStatus } from '../lib/api';
-import type { AggregatedJobList, ExternalJob, SyncStatusResponse } from '../types/api';
+import { Calendar, ExternalLink, Search, Filter, X, ChevronDown, Briefcase, MapPin, Tag } from 'lucide-react';
+import { getExternalJobs } from '../lib/api';
+import type { AggregatedJobList, ExternalJob } from '../types/api';
 
 const SOURCE_BADGE: Record<string, { bg: string; text: string; dot: string }> = {
   remotive:  { bg: 'bg-blue-50',    text: 'text-blue-700',    dot: 'bg-blue-500'    },
@@ -17,7 +17,6 @@ function formatDate(value: string | null) {
   return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-const POLLING_INTERVAL_MS = 2000;
 const SOURCES = ['remotive', 'arbeitnow', 'jobicy'];
 
 // ── Kategori broad dengan keyword matcher ────────────────────────────────
@@ -51,11 +50,6 @@ export default function ExternalJobs() {
   const [data, setData] = useState<AggregatedJobList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // ── Refresh state ─────────────────────────────────────────────
-  const [refreshLoading, setRefreshLoading] = useState(false);
-  const [refreshStatus, setRefreshStatus] = useState<SyncStatusResponse | null>(null);
-  const [refreshRequestId, setRefreshRequestId] = useState<number | null>(null);
 
   // ── Filter state (client-side) ─────────────────────────────────
   const [keyword, setKeyword] = useState('');
@@ -181,56 +175,6 @@ export default function ExternalJobs() {
     });
   };
 
-  // ── Refresh ───────────────────────────────────────────────────
-  const handleRefreshRequest = async () => {
-    setRefreshLoading(true);
-    setError(null);
-    try {
-      const request = await createExternalRefreshRequest();
-      setRefreshRequestId(request.request_id);
-      setRefreshStatus({
-        request_id: request.request_id,
-        status: request.status,
-        message: request.message,
-        total_jobs_processed: 0,
-        created_at: new Date().toISOString(),
-        started_at: null,
-        finished_at: null,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal membuat request refresh.');
-    } finally {
-      setRefreshLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (refreshRequestId === null) return;
-    let isCancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const pollStatus = async () => {
-      try {
-        const statusResult = await getExternalRefreshStatus(refreshRequestId);
-        if (isCancelled) return;
-        setRefreshStatus(statusResult);
-        if (statusResult.status === 'pending' || statusResult.status === 'running') {
-          timeoutId = setTimeout(() => { void pollStatus(); }, POLLING_INTERVAL_MS);
-          return;
-        }
-        if (statusResult.status === 'success') void loadJobs();
-      } catch (statusError) {
-        if (!isCancelled) setError(statusError instanceof Error ? statusError.message : 'Gagal memeriksa status refresh.');
-      }
-    };
-
-    void pollStatus();
-    return () => {
-      isCancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [loadJobs, refreshRequestId]);
-
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -242,32 +186,7 @@ export default function ExternalJobs() {
             Data langsung dari Remotive, Arbeitnow &amp; Jobicy: difilter secara real-time di browser.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleRefreshRequest()}
-          disabled={refreshLoading}
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshLoading ? 'animate-spin' : ''}`} />
-          {refreshLoading ? 'Memuat...' : 'Refresh Data'}
-        </button>
       </div>
-
-      {/* Refresh Status */}
-      {refreshStatus && (
-        <div className={`rounded-xl border p-3 text-sm flex items-center gap-3 ${
-          refreshStatus.status === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
-          refreshStatus.status === 'failed'  ? 'border-red-200 bg-red-50 text-red-800' :
-          'border-indigo-200 bg-indigo-50 text-indigo-800'
-        }`}>
-          <RefreshCw className={`h-4 w-4 shrink-0 ${refreshStatus.status === 'running' || refreshStatus.status === 'pending' ? 'animate-spin' : ''}`} />
-          <span>
-            <strong className="capitalize">{refreshStatus.status}</strong>
-            {refreshStatus.message ? ` — ${refreshStatus.message}` : ''}
-            {refreshStatus.finished_at ? ` (${refreshStatus.total_jobs_processed} jobs)` : ''}
-          </span>
-        </div>
-      )}
 
       {/* Filter Bar */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">

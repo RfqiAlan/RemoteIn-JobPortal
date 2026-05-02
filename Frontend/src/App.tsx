@@ -127,7 +127,7 @@ export default function App() {
                 path="/admin/dashboard"
                 element={
                   <RequireAdmin user={user}>
-                    <AdminDashboard user={user} token={token} />
+                    <AdminDashboard token={token} />
                   </RequireAdmin>
                 }
               />

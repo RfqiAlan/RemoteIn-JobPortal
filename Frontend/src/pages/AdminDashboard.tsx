@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { RefreshCcw, Activity, ShieldCheck, Clock } from 'lucide-react';
 import { createExternalRefreshRequest, getExternalRefreshStatus } from '../lib/api';
-import type { UserResponse, SyncStatusResponse } from '../types/api';
+import type { SyncStatusResponse } from '../types/api';
 
-export default function AdminDashboard({ user, token }: { user: UserResponse; token: string | null }) {
+export default function AdminDashboard({ token }: { token: string | null }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
