@@ -87,3 +87,47 @@ export interface SyncStatusResponse {
   started_at: string | null;
   finished_at: string | null;
 }
+
+export interface ProfileResponse {
+  id: number;
+  user_id: number;
+  bio: string | null;
+  resume_url: string | null;
+  skills: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfileCreatePayload {
+  bio?: string | null;
+  resume_url?: string | null;
+  skills?: string | null;
+}
+
+export interface ApplicationResponse {
+  id: number;
+  job_id: number;
+  user_id: number;
+  cover_letter: string | null;
+  status: 'pending' | 'reviewed' | 'accepted' | 'rejected';
+  applied_at: string;
+}
+
+export interface ApplicationCreatePayload {
+  job_id: number;
+  cover_letter?: string | null;
+}
+
+export interface SavedJobResponse {
+  id: number;
+  user_id: number;
+  job_id: number | null;
+  external_job_id: number | null;
+  saved_at: string;
+}
+
+export interface SavedJobCreatePayload {
+  job_id?: number;
+  external_job_id?: number;
+}
+

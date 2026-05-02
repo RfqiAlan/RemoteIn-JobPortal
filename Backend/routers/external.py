@@ -314,3 +314,14 @@ def get_external_job(job_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="External job tidak ditemukan")
 
     return map_external_job(record)
+
+@router.get(
+    "/jobs/db/{db_id}",
+    response_model=ExternalJob,
+    summary="Ambil detail external job berdasarkan internal database ID",
+)
+def get_external_job_by_db_id(db_id: int, db: Session = Depends(get_db)):
+    record = db.query(ExternalJobRecord).filter(ExternalJobRecord.id == db_id).first()
+    if not record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="External job tidak ditemukan")
+    return map_external_job(record)

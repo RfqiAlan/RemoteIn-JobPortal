@@ -10,6 +10,12 @@ import type {
   SyncStatusResponse,
   TokenResponse,
   UserResponse,
+  ProfileResponse,
+  ProfileCreatePayload,
+  ApplicationResponse,
+  ApplicationCreatePayload,
+  SavedJobResponse,
+  SavedJobCreatePayload,
 } from '../types/api';
 
 const API_PREFIX = import.meta.env.VITE_API_URL || '/api';
@@ -162,6 +168,10 @@ export async function getExternalJob(jobId: string): Promise<ExternalJob> {
   return request<ExternalJob>(`/external/jobs/${jobId}`);
 }
 
+export async function getExternalJobByDbId(dbId: number): Promise<ExternalJob> {
+  return request<ExternalJob>(`/external/jobs/db/${dbId}`);
+}
+
 export async function createExternalRefreshRequest(): Promise<SyncRequestResponse> {
   return request<SyncRequestResponse>(
     '/external/refresh-request',
@@ -173,4 +183,50 @@ export async function createExternalRefreshRequest(): Promise<SyncRequestRespons
 
 export async function getExternalRefreshStatus(requestId: number): Promise<SyncStatusResponse> {
   return request<SyncStatusResponse>(`/external/refresh-status/${requestId}`);
+}
+
+export async function getMyProfile(token: string): Promise<ProfileResponse> {
+  return request<ProfileResponse>('/profiles/me', {}, token);
+}
+
+export async function createProfile(token: string, payload: ProfileCreatePayload): Promise<ProfileResponse> {
+  return request<ProfileResponse>('/profiles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function updateProfile(token: string, payload: ProfileCreatePayload): Promise<ProfileResponse> {
+  return request<ProfileResponse>('/profiles/me', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function applyForJob(token: string, payload: ApplicationCreatePayload): Promise<ApplicationResponse> {
+  return request<ApplicationResponse>('/applications', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function getMyApplications(token: string): Promise<ApplicationResponse[]> {
+  return request<ApplicationResponse[]>('/applications/me', {}, token);
+}
+
+export async function saveJob(token: string, payload: SavedJobCreatePayload): Promise<SavedJobResponse> {
+  return request<SavedJobResponse>('/saved-jobs', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+}
+
+export async function getSavedJobs(token: string): Promise<SavedJobResponse[]> {
+  return request<SavedJobResponse[]>('/saved-jobs', {}, token);
+}
+
+export async function unsaveJob(token: string, savedJobId: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/saved-jobs/${savedJobId}`, {
+    method: 'DELETE',
+  }, token);
 }

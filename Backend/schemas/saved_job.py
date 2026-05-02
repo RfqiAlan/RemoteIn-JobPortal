@@ -4,7 +4,7 @@ from datetime import datetime
 
 class SavedJobCreate(BaseModel):
     job_id: Optional[int] = None
-    external_job_id: Optional[int] = None
+    external_job_id: Optional[str] = None
 
     @model_validator(mode='after')
     def check_at_least_one(self):

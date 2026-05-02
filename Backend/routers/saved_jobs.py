@@ -11,17 +11,37 @@ router = APIRouter(prefix="/saved-jobs", tags=["Saved Jobs"])
 
 @router.post("", response_model=SavedJobResponse, status_code=status.HTTP_201_CREATED)
 def save_job(payload: SavedJobCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    real_external_job_id = None
+    if payload.external_job_id:
+        parts = payload.external_job_id.split("_", 1)
+        if len(parts) == 2:
+            source, source_job_id = parts
+            from models.external import ExternalJob as ExternalJobRecord
+            ext_record = db.query(ExternalJobRecord).filter(
+                ExternalJobRecord.source == source,
+                ExternalJobRecord.source_job_id == source_job_id
+            ).first()
+            if not ext_record:
+                raise HTTPException(status_code=404, detail="External job not found")
+            real_external_job_id = ext_record.id
+        else:
+            raise HTTPException(status_code=400, detail="Invalid external job ID format")
+
     query = db.query(SavedJob).filter(SavedJob.user_id == current_user.id)
     if payload.job_id:
         query = query.filter(SavedJob.job_id == payload.job_id)
     else:
-        query = query.filter(SavedJob.external_job_id == payload.external_job_id)
+        query = query.filter(SavedJob.external_job_id == real_external_job_id)
         
     existing = query.first()
     if existing:
         raise HTTPException(status_code=400, detail="Job is already saved")
         
-    saved_job = SavedJob(**payload.model_dump(), user_id=current_user.id)
+    saved_job = SavedJob(
+        job_id=payload.job_id,
+        external_job_id=real_external_job_id,
+        user_id=current_user.id
+    )
     db.add(saved_job)
     db.commit()
     db.refresh(saved_job)

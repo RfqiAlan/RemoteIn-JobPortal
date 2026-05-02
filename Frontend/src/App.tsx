@@ -13,6 +13,9 @@ import ExternalJobDetail from './pages/ExternalJobDetail';
 import Jobs from './pages/Jobs';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Profile from './pages/Profile';
+import MyApplications from './pages/MyApplications';
+import SavedJobs from './pages/SavedJobs';
 
 const TOKEN_STORAGE_KEY = 'remotein_access_token';
 
@@ -104,6 +107,9 @@ export default function App() {
                   </RequireEmployer>
                 }
               />
+              <Route path="/profile" element={user && user.role === 'jobseeker' ? <Profile user={user} token={token} /> : <Navigate to="/login" replace />} />
+              <Route path="/applications" element={user && user.role === 'jobseeker' ? <MyApplications user={user} token={token} /> : <Navigate to="/login" replace />} />
+              <Route path="/saved-jobs" element={user && user.role === 'jobseeker' ? <SavedJobs user={user} token={token} /> : <Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           )}
