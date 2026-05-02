@@ -3,13 +3,27 @@ from models.user import User, RoleEnum
 from models.job import Job
 from routers.auth import hash_password
 from models.external import ExternalSyncRequest
+from models.profile import UserProfile
+from models.application import Application
+from models.saved_job import SavedJob
 
 def seed_data():
     db = SessionLocal()
     
-    # Check if data already exists
-    if db.query(User).count() > 0:
-        print("Data seem to already exist in 'users' table. Skipping seeding to prevent duplicate.")
+    admin_exists = db.query(User).filter(User.email == "admin@remotein.com").first()
+    if not admin_exists:
+        print("Seeding admin user...")
+        admin = User(
+            name="Super Admin",
+            email="admin@remotein.com",
+            hashed_password=hash_password("admin123"),
+            role=RoleEnum.admin
+        )
+        db.add(admin)
+        db.commit()
+
+    if db.query(User).count() > 1:
+        print("Data seem to already exist in 'users' table. Skipping seeding other dummy data.")
         db.close()
         return
 

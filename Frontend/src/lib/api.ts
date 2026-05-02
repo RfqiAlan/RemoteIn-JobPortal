@@ -172,17 +172,18 @@ export async function getExternalJobByDbId(dbId: number): Promise<ExternalJob> {
   return request<ExternalJob>(`/external/jobs/db/${dbId}`);
 }
 
-export async function createExternalRefreshRequest(): Promise<SyncRequestResponse> {
+export async function createExternalRefreshRequest(token: string): Promise<SyncRequestResponse> {
   return request<SyncRequestResponse>(
     '/external/refresh-request',
     {
       method: 'POST',
     },
+    token
   );
 }
 
-export async function getExternalRefreshStatus(requestId: number): Promise<SyncStatusResponse> {
-  return request<SyncStatusResponse>(`/external/refresh-status/${requestId}`);
+export async function getExternalRefreshStatus(token: string, requestId: number): Promise<SyncStatusResponse> {
+  return request<SyncStatusResponse>(`/external/refresh-status/${requestId}`, {}, token);
 }
 
 export async function getMyProfile(token: string): Promise<ProfileResponse> {

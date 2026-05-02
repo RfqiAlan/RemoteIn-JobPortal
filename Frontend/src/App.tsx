@@ -16,6 +16,7 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import MyApplications from './pages/MyApplications';
 import SavedJobs from './pages/SavedJobs';
+import AdminDashboard from './pages/AdminDashboard';
 
 const TOKEN_STORAGE_KEY = 'remotein_access_token';
 
@@ -30,6 +31,18 @@ function RequireEmployer({ user, children }: GuardProps) {
   }
 
   if (user.role !== 'employer') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function RequireAdmin({ user, children }: GuardProps) {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 
@@ -110,6 +123,14 @@ export default function App() {
               <Route path="/profile" element={user && user.role === 'jobseeker' ? <Profile user={user} token={token} /> : <Navigate to="/login" replace />} />
               <Route path="/applications" element={user && user.role === 'jobseeker' ? <MyApplications user={user} token={token} /> : <Navigate to="/login" replace />} />
               <Route path="/saved-jobs" element={user && user.role === 'jobseeker' ? <SavedJobs user={user} token={token} /> : <Navigate to="/login" replace />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <RequireAdmin user={user}>
+                    <AdminDashboard user={user} token={token} />
+                  </RequireAdmin>
+                }
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           )}

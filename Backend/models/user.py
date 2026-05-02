@@ -7,6 +7,7 @@ from database import Base
 class RoleEnum(str, enum.Enum):
     jobseeker = "jobseeker"
     employer = "employer"
+    admin = "admin"
 
 class User(Base):
     __tablename__ = "users"

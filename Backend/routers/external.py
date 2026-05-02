@@ -17,6 +17,8 @@ from schemas.external import (
     SyncStatusResponse,
 )
 from services.external_api import fetch_arbeitnow, fetch_jobicy, fetch_remotive
+from models.user import User
+from auth.dependencies import require_admin
 
 router = APIRouter(prefix="/external", tags=["External Jobs"])
 
@@ -137,12 +139,13 @@ async def run_external_sync(sync_request_id: int) -> None:
     "/refresh-request",
     response_model=SyncRequestResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Siapa saja bisa meminta refresh data external jobs (cooldown global 10 menit)",
+    summary="Admin memicu refresh data external jobs",
 )
 def create_refresh_request(
     request: Request,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     # Gunakan global cooldown untuk cegah spam dari siapapun
     now = datetime.utcnow()
@@ -186,11 +189,12 @@ def create_refresh_request(
 @router.get(
     "/refresh-status/{request_id}",
     response_model=SyncStatusResponse,
-    summary="Cek status refresh external jobs (public)",
+    summary="Cek status refresh external jobs (Admin only)",
 )
 def get_refresh_status(
     request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     request_record = db.query(ExternalSyncRequest).filter(
         ExternalSyncRequest.id == request_id

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { LogOut, FileText, Bookmark, User as UserIcon, ChevronDown } from 'lucide-react';
+import { LogOut, FileText, Bookmark, User as UserIcon, ChevronDown, ShieldCheck } from 'lucide-react';
 import type { UserResponse } from '../types/api';
 
 type NavbarProps = {
@@ -54,6 +54,11 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
                 Dashboard
               </NavLink>
             )}
+            {user?.role === 'admin' && (
+              <NavLink to="/admin/dashboard" className={navLinkClass}>
+                Admin Dashboard
+              </NavLink>
+            )}
           </nav>
         </div>
 
@@ -91,6 +96,16 @@ export default function Navbar({ user, onLogout }: NavbarProps) {
                       <Link to="/saved-jobs" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
                         <Bookmark className="h-4 w-4" />
                         Saved Jobs
+                      </Link>
+                      <div className="my-1 border-b border-slate-100"></div>
+                    </>
+                  )}
+                  
+                  {user.role === 'admin' && (
+                    <>
+                      <Link to="/admin/dashboard" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors">
+                        <ShieldCheck className="h-4 w-4" />
+                        Admin Dashboard
                       </Link>
                       <div className="my-1 border-b border-slate-100"></div>
                     </>
