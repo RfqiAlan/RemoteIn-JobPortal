@@ -1,6 +1,14 @@
 # RemoteIn: Job Portal
 
-Platform lowongan kerja remote full-stack berbasis **FastAPI** (Backend) + **React/Vite** (Frontend), dengan fitur auth JWT, manajemen job internal, dan agregasi job eksternal (Remotive, Arbeitnow, Jobicy).
+Platform lowongan kerja remote full-stack berbasis **FastAPI** (Backend) + **React/Vite** (Frontend), dengan fitur otentikasi JWT (Role-Based Access Control), manajemen pekerjaan internal, dan sistem agregasi pekerjaan dari pihak ketiga (Remotive, Arbeitnow, Jobicy) yang diamankan.
+
+## 🌟 Fitur Utama Terbaru
+1. **Multi-Role User (RBAC)**: Terdapat 3 role spesifik:
+   - **Jobseeker**: Bisa mencari pekerjaan, mengelola profil dan resume, melamar pekerjaan (lewat Modal Apply), serta menyimpan pekerjaan favorit (Bookmark).
+   - **Employer**: Bisa membuat (post), mengubah, dan menghapus lowongan pekerjaan milik sendiri.
+   - **Admin**: Memiliki Dashboard khusus untuk memantau sistem dan secara manual menarik data pekerjaan (Sync) dari API pihak ketiga secara aman.
+2. **External API Aggregation**: Sinkronisasi pekerjaan *remote* dari situs luar yang disimpan ke dalam database internal. Endpoint untuk sinkronisasi ini telah diproteksi sepenuhnya dan hanya bisa dilakukan oleh **Admin**.
+3. **Advanced Frontend UI**: Antarmuka modern, interaktif (dengan *Modal Popup*, *Dynamic Dropdowns*), dan bergaya *Glassmorphism* menggunakan **Tailwind CSS v4** dan **Lucide React**.
 
 ## 🛠️ Tech Stack
 
@@ -16,37 +24,29 @@ Platform lowongan kerja remote full-stack berbasis **FastAPI** (Backend) + **Rea
 ```text
 RemoteIn-JobPortal/
 ├── Backend/
-│   ├── auth/                   # JWT handler + auth dependencies
-│   ├── models/                 # SQLAlchemy models (user, job, external)
-│   ├── routers/                # Router FastAPI (auth, jobs, external)
-│   ├── schemas/                # Pydantic schemas
-│   ├── services/               # Integrasi API eksternal
+│   ├── auth/                   # JWT handler + auth dependencies (RBAC)
+│   ├── models/                 # SQLAlchemy models (user, job, profile, application, saved_job, external)
+│   ├── routers/                # Router FastAPI (auth, jobs, external, profiles, applications, saved_jobs)
+│   ├── schemas/                # Pydantic schemas untuk validasi
+│   ├── services/               # Script integrasi & parser API eksternal
 │   ├── database.py             # Koneksi DB
-│   ├── main.py                 # Entry point FastAPI (+ auto migration + auto seed)
-│   ├── seed.py                 # Seed data dummy awal
-│   ├── migrate_anonymous_refresh.py
-│   └── requirements.txt
+│   ├── main.py                 # Entry point FastAPI (+ auto migration script & seed data)
+│   ├── seed.py                 # Seed data dummy (termasuk pembuatan user Admin awal)
+│   └── migrate_role_enum.py    # Script migrasi manual untuk struktur ENUM role di MySQL
 ├── Frontend/
-│   ├── public/
 │   ├── src/
-│   │   ├── assets/
-│   │   ├── components/         # Hero, Navbar, Footer, dll.
-│   │   ├── lib/                # API client
-│   │   ├── pages/              # Home, Jobs, Detail, Login/Register, Dashboard
-│   │   └── types/
+│   │   ├── components/         # Hero, Navbar (Dynamic Dropdown), Footer, dll.
+│   │   ├── lib/                # Konfigurasi Fetcher API Client
+│   │   ├── pages/              # Home, Jobs, JobDetail, ExternalJobs, Profile, MyApplications, SavedJobs, AdminDashboard
+│   │   └── types/              # Type Definition (TypeScript) untuk keamanan tipe
 │   ├── vite.config.ts
-│   ├── package.json
-│   └── README.md               # Dokumentasi frontend ringkas
-├── docker-compose.yml
-├── requirements.txt
-├── LAPORAN_PROYEK.md
-└── README.md
+│   └── package.json
+└── docker-compose.yml
 ```
 
 ## 🚀 Menjalankan Project
 
 ### Opsi A Docker (Direkomendasikan)
-
 > Prasyarat: Docker Desktop aktif.
 
 1. Clone repo
@@ -55,7 +55,7 @@ git clone https://github.com/RfqiAlan/RemoteIn-JobPortal.git
 cd RemoteIn-JobPortal
 ```
 
-2. (Opsional) buat `.env` di root untuk JWT secret
+2. Buat `.env` di root untuk JWT secret (Opsional)
 ```env
 SECRET_KEY=ganti-dengan-secret-yang-kuat
 ```
@@ -64,28 +64,12 @@ SECRET_KEY=ganti-dengan-secret-yang-kuat
 ```bash
 docker compose up --build
 ```
-
-Service yang aktif:
-
-| Service | URL / Port |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:8000 |
-| MySQL | localhost:3307 |
-
-4. Hentikan service
-```bash
-docker compose down
-# atau termasuk hapus volume DB:
-docker compose down -v
-```
+*Frontend akan berjalan di `http://localhost:5173` dan Backend di `http://localhost:8000`.*
 
 ### Opsi B Manual (Local Dev)
-
 > Prasyarat: Python 3.11+, Node.js 18+, MySQL 8.
 
 #### Backend
-
 ```bash
 cd Backend
 python -m venv .venv
@@ -94,7 +78,6 @@ pip install -r requirements.txt
 ```
 
 Buat `.env` di folder `Backend/`:
-
 ```env
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -105,53 +88,49 @@ SECRET_KEY=ganti-dengan-secret-yang-kuat
 ```
 
 Load env ke shell lalu jalankan backend:
-
 ```bash
 set -a && source .env && set +a
 uvicorn main:app --reload
 ```
-
-Backend: http://localhost:8000  
-Swagger: http://localhost:8000/docs
+*Saat pertama kali dijalankan, sistem akan memicu `seed.py` secara otomatis untuk mengisi database (termasuk akun **Admin** dengan email `admin@remotein.com` & password `admin123`).*
 
 #### Frontend
-
 ```bash
 cd Frontend
 npm install
 npm run dev
 ```
 
-Frontend: http://localhost:5173  
-Proxy API default: `/api/*` → `http://127.0.0.1:8000` (lihat `vite.config.ts`).
-
 ## 📋 API Reference
 
-### Auth
+### Auth & Profiles
 | Method | Endpoint | Auth | Keterangan |
 |---|---|---|---|
 | `POST` | `/auth/register` | ❌ | Registrasi user (`jobseeker` / `employer`) |
 | `POST` | `/auth/login` | ❌ | Login dan dapatkan `access_token` |
-| `GET` | `/auth/me` | ✅ JWT | Profil user login |
+| `GET` | `/auth/me` | ✅ JWT | Cek info & role user yang sedang login |
+| `GET/PUT`| `/profiles/me` | ✅ jobseeker | Mendapatkan dan mengubah informasi Profil & Skill pelamar |
 
-### Internal Jobs
+### Internal Jobs & Applications
 | Method | Endpoint | Auth | Keterangan |
 |---|---|---|---|
 | `GET` | `/jobs` | ❌ | List semua job aktif |
-| `GET` | `/jobs/{id}` | ❌ | Detail job |
-| `POST` | `/jobs` | ✅ employer | Buat job |
-| `PUT` | `/jobs/{id}` | ✅ employer | Update job milik sendiri |
-| `DELETE` | `/jobs/{id}` | ✅ employer | Hapus job milik sendiri |
+| `POST` | `/jobs` | ✅ employer | Buat lowongan baru |
+| `POST` | `/applications` | ✅ jobseeker | Melamar pekerjaan (dengan Cover Letter) |
+| `GET` | `/applications/my` | ✅ jobseeker | Melihat riwayat dan status lamaran sendiri |
 
-### External Jobs (database-backed)
+### Saved Jobs (Bookmarks)
 | Method | Endpoint | Auth | Keterangan |
 |---|---|---|---|
-| `GET` | `/external/aggregate` | ❌ | Ambil job eksternal teragregasi |
-| `GET` | `/external/jobs/{id}` | ❌ | Detail 1 external job (`{source}_{source_job_id}`) |
-| `GET` | `/external/remotive` | ❌ | Job dari Remotive |
-| `GET` | `/external/arbeitnow` | ❌ | Job dari Arbeitnow |
-| `GET` | `/external/jobicy` | ❌ | Job dari Jobicy |
-| `POST` | `/external/refresh-request` | ❌ | Trigger sinkronisasi (cooldown global 10 menit) |
-| `GET` | `/external/refresh-status/{id}` | ❌ | Cek status sinkronisasi |
+| `GET` | `/saved-jobs` | ✅ jobseeker | Melihat daftar lowongan yang disimpan |
+| `POST` | `/saved-jobs` | ✅ jobseeker | Menyimpan lowongan (Mendukung ID internal dan Eksternal) |
+| `DELETE` | `/saved-jobs/{id}` | ✅ jobseeker | Menghapus lowongan tersimpan |
 
-> Batas sinkronisasi per sumber saat refresh: Remotive ≤ 500, Arbeitnow ≤ 1000, Jobicy ≤ 50.
+### External Jobs (Database-Backed)
+| Method | Endpoint | Auth | Keterangan |
+|---|---|---|---|
+| `GET` | `/external/aggregate` | ❌ | Ambil semua external jobs (Remotive, Jobicy, Arbeitnow) dari database internal |
+| `POST` | `/external/refresh-request` | ✅ **admin** | *Trigger* sistem untuk menarik dan menyinkronkan data lowongan API eksternal baru |
+| `GET` | `/external/refresh-status/{id}`| ✅ **admin** | Mengecek status berjalannya proses sinkronisasi |
+
+*(Batas sinkronisasi per sumber saat ditarik oleh Admin: Remotive ≤ 500, Arbeitnow ≤ 1000, Jobicy ≤ 50).*
