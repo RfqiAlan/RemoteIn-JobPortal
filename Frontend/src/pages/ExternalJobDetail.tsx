@@ -104,8 +104,11 @@ export default function ExternalJobDetail() {
             <h2 className="text-xl font-bold text-slate-900 mb-4 font-heading">About this External Job</h2>
             {job.description ? (
               <div 
-                className="prose prose-slate max-w-none text-slate-600 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: job.description }} 
+                className="prose prose-slate prose-sm sm:prose-base max-w-none text-slate-600 leading-relaxed prose-p:my-1.5 prose-headings:my-3 prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2"
+                dangerouslySetInnerHTML={{ __html: job.description
+                  .replace(/(<br\s*\/?>\s*){2,}/gi, '<br />')
+                  .replace(/<p>\s*(<br\s*\/?>\s*)*<\/p>/gi, '')
+                }} 
               />
             ) : (
               <p className="text-slate-600 leading-relaxed max-w-3xl">
